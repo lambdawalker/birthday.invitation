@@ -17,8 +17,9 @@ function render(editing = false) {
   const answered = family && ["yes", "no"].includes(family.rsvp) && !editing;
   $("#rsvp-actions").hidden = answered;
   $("#rsvp-saved").hidden = !answered;
+  const total = family ? family.adults + family.children : 0;
   if (answered) $("#rsvp-choice").textContent = family.rsvp === "yes"
-    ? `Confirmado: ¡sí asistiremos! · ${family.adults + family.children} personas`
+    ? `Confirmado: ¡sí ${total === 1 ? "asistiré" : "asistiremos"}! · ${total} ${total === 1 ? "persona" : "personas"}`
     : "Respuesta: no podremos asistir";
 }
 function setBusy(value) {
@@ -42,7 +43,7 @@ async function save(rsvp) {
     family = { ...family, ...data };
     render();
     dialog.close();
-    status.textContent = "Tu respuesta quedó guardada. ¡Gracias!";
+    status.textContent = "";
   } catch (err) {
     status.textContent = err.message;
     $("#rsvp-dialog-status").textContent = err.message;
