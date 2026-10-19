@@ -12,30 +12,28 @@ Companion: [birthday.invitation.android](https://github.com/lambdawalker/birthda
 Event: October 24, 2026, **4 p.m. America/Ciudad_Juarez**. Includes the weather-related change from 5 p.m., gift preferences, map and parking directions. Neighborhood name omitted until confirmed. Parking tab searches Calle Ingeniería; it does not invent an exact parking-lot coordinate. Check the map with the host before sharing.
 
 ## Local development
-Install Go (version from `backend/go.mod`; automatic toolchain download is supported).
+Install Go (version from `go.mod`; automatic toolchain download is supported).
 
 PowerShell:
 ```powershell
 $env:ADMIN_KEY = 'local-development-key-at-least-32-characters'
-cd backend
 go run ./cmd/server
 ```
 Bash:
 ```bash
-cd backend
 ADMIN_KEY=local-development-key-at-least-32-characters go run ./cmd/server
 ```
 Open `http://localhost:8080/?i=0123456789abcdef0123456789abcdef`.
 The local database is in memory and resets on restart. The admin key above is only an example for localhost. To use DynamoDB locally, set `TABLE_NAME`, `AWS_PROFILE` and `AWS_REGION`.
 
 ## Deploy from Windows or Linux
-Prerequisites: Python 3.10+, Go, Node.js 22+, AWS CLI v2, Pulumi CLI. Install from their official sites. You do **not** need a Pulumi account.
+Prerequisites: Go (version in `go.mod`), AWS CLI v2, and Pulumi CLI (compatible with the pinned Go SDK). Python, Node.js and npm are not required. Install from their official sites. You do **not** need a Pulumi account.
 
 1. Configure AWS SSO with `aws configure sso` and select a role permitted to create the stack resources.
 2. Add the domain to Cloudflare and activate its nameservers. Obtain the Zone ID and a token scoped to that zone with **DNS Edit** and **Zone Read**.
-3. Run `python scripts/deploy.py` (Windows may use `py scripts/deploy.py`).
+3. Run `deploy.bat` on Windows (PowerShell: `.\deploy.bat`) or `./deploy.sh` on Linux from the repository root. Both launch the Go wizard and also work when invoked using their full path from another directory.
 4. The wizard checks tools, logs in with AWS SSO when needed, creates/uses an encrypted versioned private S3 state bucket, asks for a Pulumi encryption passphrase, and requests the Cloudflare token without echoing it.
-5. It generates encrypted admin/import secrets, compiles the Lambda, checks TypeScript, and runs `pulumi preview`. Type `DESPLEGAR` to apply. State bootstrap has its own `CREAR` prompt.
+5. It generates encrypted admin/import secrets, compiles the Lambda, compiles the Go infrastructure, and runs `pulumi preview`. Type `DESPLEGAR` to apply. State bootstrap has its own `CREAR` prompt.
 6. Save the passphrase in your password manager; use the same passphrase and state bucket for later updates. Do not rotate `importNamespace` between imports.
 7. From `infra`, use `pulumi config get adminKey` in a private terminal to obtain your administrator key. Open `/admin.html`.
 
@@ -53,27 +51,33 @@ CSV headers: `name,phone,email` (email may be blank), optional `id` (32 lowercas
 
 Set `IMPORT_NAMESPACE` to `pulumi config get importNamespace` and `TABLE_NAME` to `pulumi stack output tableName` (run these from infra). Keep the namespace private; it derives stable unguessable family IDs from phone numbers.
 ```bash
-cd backend
-go run ./cmd/import-guests -file ../my-guests.csv          # validate only
-go run ./cmd/import-guests -file ../my-guests.csv -apply   # create missing families
+go run ./cmd/import-guests -file my-guests.csv          # validate only
+go run ./cmd/import-guests -file my-guests.csv -apply   # create missing families
 ```
 Existing records are never overwritten; RSVPs, sending and assignments are preserved. Repeating an import with the same namespace/phone is safe. Changing a phone changes derived ID unless an explicit original `id` is retained. The CLI does not update existing contacts; correct/import before sending or use a reviewed database maintenance operation.
 
 ## Connect Android
 In `/send.html`, create a device credential. Copy the server URL and credential into the app. Assign families before sending; assignments are shown in both reports. Revoking a device blocks new API calls but does not undo SMS already dispatched. Keep the app open for the short paced batch. Confirm real-phone permissions/SIM/carrier behavior with one recipient before the remaining 49.
 
-## Verification
-```bash
-cd backend
-go test -race ./...
-go vet ./...
-cd ../infra
-npm ci
-npm run check
-cd ..
-python -m unittest discover -s scripts -p 'test_*.py'
-python scripts/build.py
-```
-CI builds an executable Linux arm64 `bootstrap` ZIP. AWS deployment, carrier delivery and physical Android permissions require your environment. See [API contract](docs/api.md), [design](docs/superpowers/specs/2026-10-19-invitation.md), and [plan](docs/superpowers/plans/2026-10-19-invitation.md).
+## Go commands and verification
 
-For the optional browser smoke check, start the local server, install Playwright and Chromium (`npm install --no-save playwright && npx playwright install chromium`), and run `ADMIN_KEY=your-local-key node scripts/browser-smoke.cjs`. It exercises RSVP, admin login, device creation and mobile layout; screenshots go to `build/screenshots`.
+All commands run from the repository root:
+
+```bash
+go run ./cmd/server         # local invitation and API; set ADMIN_KEY first
+go run ./cmd/build          # build/lambda.zip, Linux arm64 on any host
+go run ./cmd/deploy --check # check prerequisites, no cloud changes
+go run ./cmd/deploy         # same wizard as deploy.bat / deploy.sh
+go test ./...
+go vet ./...
+```
+
+The root Go module contains `cmd/server`, `cmd/lambda`, `cmd/import-guests`, `cmd/build`, `cmd/deploy`, `internal/app`, `internal/deploytools`, and the Go Pulumi program in `infra/`. The browser assets in `web/` remain HTML/CSS/JavaScript; they are served directly and need no Node build. The Android companion remains in its separate repository.
+
+CI runs tests, vet, Lambda packaging and deployment/infrastructure compilation on Windows and Linux; Linux also runs race detection. Pulumi mock tests exercise the resource graph without cloud credentials. They do not substitute for reviewing `pulumi preview` against your AWS account. No deployment is performed by CI.
+
+The Go infrastructure uses Pulumi’s core `RegisterResource` API with pinned AWS/Cloudflare provider versions, preserving the existing resource types, logical names, configuration keys and exports. Existing stacks keep their S3 backend and passphrase: do not create a replacement stack or rotate importNamespace. Review the preview for unexpected replacements before typing DESPLEGAR. Old Python and TypeScript tooling has been removed.
+
+Hidden prompts require an interactive terminal. For an existing shell-managed setup, the wizard can also read `PULUMI_CONFIG_PASSPHRASE` and `CLOUDFLARE_API_TOKEN` from the environment. Never paste these into command-line arguments or commit them. The deployment wizard still asks you to review and approve the preview.
+
+AWS provisioning, carrier delivery and physical Android permissions require your environment. See the [API contract](docs/api.md). The earlier design and plan under `docs/superpowers/` are historical; this README documents the current Go layout.

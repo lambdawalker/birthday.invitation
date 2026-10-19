@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/lambdawalker/birthday.invitation/backend/internal/app"
+	"github.com/lambdawalker/birthday.invitation/internal/app"
 	"log"
 	"net/http"
 	"os"
@@ -35,7 +35,7 @@ func main() {
 	mux.Handle("/api/", app.NewServer(st, key, origin))
 	web := os.Getenv("WEB_DIR")
 	if web == "" {
-		web = "../web"
+		web = "web"
 	}
 	mux.Handle("/", http.FileServer(http.Dir(web)))
 	srv := http.Server{Addr: "127.0.0.1:8080", Handler: mux, ReadHeaderTimeout: 5 * time.Second}

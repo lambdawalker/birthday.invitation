@@ -1,7 +1,7 @@
 node_modules/
 .env*
 *.zip
-build/
+/build/
 .superpowers/
 infra/Pulumi.*.yaml
 !infra/Pulumi.example.yaml

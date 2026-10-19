@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/lambdawalker/birthday.invitation/backend/internal/app"
+	"github.com/lambdawalker/birthday.invitation/internal/app"
 	"log"
 	"os"
 )
