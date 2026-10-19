@@ -76,9 +76,14 @@ func TestInfrastructureProtectionAndRouting(t *testing.T) {
 		}
 	}
 	cdn := mocks.resources["cdn"].Inputs
+	// IDs verified against AWS's managed-policy catalog:
+	// https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-cache-policies.html
+	if object(cdn["defaultCacheBehavior"])["cachePolicyId"].StringValue() != "658327ea-f89d-4fab-a63d-7e88639e58f6" {
+		t.Fatal("static assets must use AWS Managed-CachingOptimized")
+	}
 	api := object(cdn["orderedCacheBehaviors"].ArrayValue()[0])
-	if api["cachePolicyId"].StringValue() != "413f160d-7a38-4b3d-9b16-12e677c2308c" {
-		t.Fatal("private API must not be cached")
+	if api["cachePolicyId"].StringValue() != "4135ea2d-6df8-44a3-9df3-4b5a84be39ad" {
+		t.Fatal("private API must use AWS Managed-CachingDisabled")
 	}
 	if api["originRequestPolicyId"].StringValue() != "b689b0a8-53d0-40ab-baf2-68738e2966ac" {
 		t.Fatal("API must forward auth and cookies")
