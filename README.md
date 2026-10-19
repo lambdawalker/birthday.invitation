@@ -94,3 +94,6 @@ The `auto` Zone ID default looks up the exact domain using your Cloudflare token
 Edit [deploy.defaults.yaml](deploy.defaults.yaml) in the repository root to customize these non-secret defaults. Both launchers load it automatically, regardless of the directory you launch from. Omitted fields retain built-in defaults; a missing file also uses built-in defaults. Invalid or unknown fields fail before any cloud commands run.
 
 Typed answers override the displayed defaults. For the AWS profile and Cloudflare Zone ID, environment variables override the YAML defaults. The state bucket supports `{account}` and `{region}` placeholders, expanded after AWS login and region selection. Set either confirmation default to `CANCEL` if you prefer Enter to stop. Pulumi continues to use the existing `infra` project directory; no empty project directory is needed. Keep all tokens and the encryption passphrase outside this file.
+
+
+If Pulumi offers to create a new project or asks for an empty directory after login, cancel with Ctrl+C and update the repository before rerunning the launcher. The wizard runs all Pulumi commands with `--non-interactive`, uses the existing `infra` directory, and creates/selects the configured stack itself. Keep your existing state bucket and encryption passphrase.

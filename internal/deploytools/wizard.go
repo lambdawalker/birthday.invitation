@@ -125,6 +125,11 @@ func (w *wizard) command(dir, input string, capture bool, args ...string) comman
 	if capture && args[0] == "aws" {
 		args = append(append([]string(nil), args...), "--output", "json", "--no-cli-pager", "--color", "off")
 	}
+	// The wizard owns prompts. Pulumi must not enter first-login onboarding
+	// or consume answers intended for subsequent wizard prompts.
+	if args[0] == "pulumi" {
+		args = append(append([]string(nil), args...), "--non-interactive")
+	}
 	newCommand := w.newCommand
 	if newCommand == nil {
 		newCommand = exec.Command
@@ -133,7 +138,7 @@ func (w *wizard) command(dir, input string, capture bool, args ...string) comman
 	cmd.Dir = dir
 	if input != "" {
 		cmd.Stdin = strings.NewReader(input)
-	} else {
+	} else if args[0] != "pulumi" {
 		cmd.Stdin = os.Stdin
 	}
 	var out, stderr bytes.Buffer
