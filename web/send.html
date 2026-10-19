@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Envío de invitaciones · Abi</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="admin.js"></script>
+  </head>
+  <body data-page="send">
+    <main class="admin-shell">
+      <nav class="admin-nav">
+        <a class="brand" href="/">Abi ✦ 2</a><a href="admin.html">Asistencia</a
+        ><a href="send.html">Envío de invitaciones</a
+        ><button id="logout" class="button outline" hidden>Salir</button>
+      </nav>
+      <section id="login" class="login-card">
+        <p class="eyebrow">SOLO ANFITRIONES</p>
+        <h1 class="admin-title">Bienvenido a la aldea.</h1>
+        <form id="login-form">
+          <label
+            >Clave de administración<input
+              id="key"
+              type="password"
+              autocomplete="current-password"
+              required /></label
+          ><button class="button gold">Entrar</button>
+        </form>
+      </section>
+      <section id="dashboard" hidden>
+        <p class="eyebrow">EL CUMPLEAÑOS DE ABI</p>
+        <h1 class="admin-title">Envío de invitaciones</h1>
+        <div class="metrics" id="metrics"></div>
+        <p class="notice">
+          La asignación a un teléfono no significa que la invitación se haya
+          enviado. La respuesta de asistencia se registra por separado.
+        </p>
+        <div class="toolbar">
+          <input
+            id="search"
+            type="search"
+            placeholder="Buscar nombre o teléfono"
+            aria-label="Buscar familias"
+          /><select id="filter" aria-label="Filtrar familias">
+            <option value="all">Todas las familias</option>
+            <option value="pending">Por enviar</option>
+            <option value="covered">Asignadas a la app</option>
+            <option value="yes">Asistirán</option>
+            <option value="no">No asistirán</option>
+            <option value="unanswered">Sin respuesta</option></select
+          ><button id="refresh" class="button outline">Actualizar</button
+          ><button id="export" class="button outline">Exportar CSV</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead id="head"></thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+        <section class="device-panel">
+          <h2>Teléfonos conectados</h2>
+          <p>
+            Genera una credencial para cada teléfono. Cópiala en la app; solo se
+            muestra una vez.
+          </p>
+          <form id="device-form" class="toolbar">
+            <input
+              id="device-name"
+              maxlength="80"
+              placeholder="Nombre del teléfono"
+              aria-label="Nombre del teléfono"
+              required
+            /><button class="button gold">Conectar teléfono</button>
+          </form>
+          <pre id="pairing" class="pairing" hidden></pre>
+          <div id="devices"></div>
+        </section>
+      </section>
+      <p id="status" role="status" aria-live="polite"></p>
+    </main>
+  </body>
+</html>
