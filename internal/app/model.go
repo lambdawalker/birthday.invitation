@@ -19,6 +19,8 @@ type Event struct {
 	Detail  string `json:"detail,omitempty"`
 }
 type Family struct {
+	CreatedBy    string  `json:"createdBy,omitempty"`
+	CreatedName  string  `json:"createdName,omitempty"`
 	ID           string  `json:"id"`
 	Name         string  `json:"name"`
 	Phone        string  `json:"phone"`

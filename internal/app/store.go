@@ -58,6 +58,17 @@ func (m *MemoryStore) Create(_ context.Context, f Family) error {
 	if _, ok := m.families[f.ID]; ok {
 		return ErrConflict
 	}
+	phone, err := NormalizePhone(f.Phone)
+	if err != nil {
+		return err
+	}
+	for _, old := range m.families {
+		existing, _ := NormalizePhone(old.Phone)
+		if existing == phone {
+			return ErrConflict
+		}
+	}
+	f.Phone = phone
 	m.families[f.ID] = clone(f)
 	return nil
 }

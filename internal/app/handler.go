@@ -33,6 +33,7 @@ func NewServer(st Store, key, origin string) *Server {
 	s.mux.HandleFunc("POST /api/invitations/{id}/rsvp", s.rsvp)
 	s.mux.HandleFunc("GET /api/admin/families", s.adminList)
 	s.mux.HandleFunc("GET /api/families", s.list)
+	s.mux.HandleFunc("POST /api/families/import", s.importContacts)
 	s.mux.HandleFunc("POST /api/families/{id}/actions", s.action)
 	s.mux.HandleFunc("GET /api/admin/devices", s.devices)
 	s.mux.HandleFunc("POST /api/admin/devices", s.devices)
@@ -59,7 +60,10 @@ func send(w http.ResponseWriter, c int, v any) {
 }
 func fail(w http.ResponseWriter, c int, m string) { send(w, c, map[string]string{"error": m}) }
 func decode(w http.ResponseWriter, r *http.Request, v any) bool {
-	r.Body = http.MaxBytesReader(w, r.Body, 8192)
+	return decodeLimit(w, r, v, 8192)
+}
+func decodeLimit(w http.ResponseWriter, r *http.Request, v any, limit int64) bool {
+	r.Body = http.MaxBytesReader(w, r.Body, limit)
 	d := json.NewDecoder(r.Body)
 	d.DisallowUnknownFields()
 	if d.Decode(v) != nil {

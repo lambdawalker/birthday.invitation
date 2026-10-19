@@ -88,7 +88,35 @@ func (d *DynamoStore) List(c context.Context) ([]Family, error) {
 	return fs, nil
 }
 func (d *DynamoStore) Create(c context.Context, f Family) error {
-	return d.put(c, "F#"+f.ID, f, f.Revision, "attribute_not_exists(pk)", -1)
+	phone, err := NormalizePhone(f.Phone)
+	if err != nil {
+		return err
+	}
+	f.Phone = phone
+	data, err := json.Marshal(f)
+	if err != nil {
+		return err
+	}
+	// Claim the phone and create its family atomically. A failed request cannot
+	// leave an orphan reservation or allow two app users to add the same number.
+	_, err = d.Client.TransactWriteItems(c, &dynamodb.TransactWriteItemsInput{
+		ClientRequestToken: aws.String(RandomID()),
+		TransactItems: []types.TransactWriteItem{
+			{Put: &types.Put{TableName: aws.String(d.Table), ConditionExpression: aws.String("attribute_not_exists(pk)"),
+				Item: map[string]types.AttributeValue{"pk": &types.AttributeValueMemberS{Value: "F#" + f.ID}, "data": &types.AttributeValueMemberS{Value: string(data)}, "revision": &types.AttributeValueMemberN{Value: strconv.Itoa(f.Revision)}}}},
+			{Put: &types.Put{TableName: aws.String(d.Table), ConditionExpression: aws.String("attribute_not_exists(pk)"),
+				Item: map[string]types.AttributeValue{"pk": &types.AttributeValueMemberS{Value: "P#" + HashToken(phone)}, "familyId": &types.AttributeValueMemberS{Value: f.ID}}}},
+		},
+	})
+	var cancelled *types.TransactionCanceledException
+	if errors.As(err, &cancelled) {
+		for _, reason := range cancelled.CancellationReasons {
+			if aws.ToString(reason.Code) == "ConditionalCheckFailed" {
+				return ErrConflict
+			}
+		}
+	}
+	return err
 }
 func (d *DynamoStore) Save(c context.Context, f Family, rev int) error {
 	return d.put(c, "F#"+f.ID, f, f.Revision, "revision = :rev", rev)

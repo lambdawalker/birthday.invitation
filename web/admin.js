@@ -3,6 +3,7 @@ let families = [],
   baseUrl = location.origin;
 const isSend = document.body.dataset.page === "send";
 const labels = {
+  added: "Added from phone contacts",
   pending: "Pendiente",
   sending: "SMS en curso",
   sent: "SMS enviado",
