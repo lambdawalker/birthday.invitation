@@ -118,11 +118,12 @@ func (s *Server) family(w http.ResponseWriter, r *http.Request) (Family, bool) {
 }
 func public(f Family) any {
 	return struct {
-		Name     string `json:"name"`
-		RSVP     string `json:"rsvp"`
-		Adults   int    `json:"adults"`
-		Children int    `json:"children"`
-	}{f.Name, f.RSVP, f.Adults, f.Children}
+		HeadcountUnknown bool   `json:"headcountUnknown"`
+		Name             string `json:"name"`
+		RSVP             string `json:"rsvp"`
+		Adults           int    `json:"adults"`
+		Children         int    `json:"children"`
+	}{f.HeadcountUnknown, f.Name, f.RSVP, f.Adults, f.Children}
 }
 func (s *Server) invitation(w http.ResponseWriter, r *http.Request) {
 	if f, ok := s.family(w, r); ok {
@@ -132,13 +133,22 @@ func (s *Server) invitation(w http.ResponseWriter, r *http.Request) {
 func (s *Server) rsvp(w http.ResponseWriter, r *http.Request) {
 	var b struct {
 		RSVP     string `json:"rsvp"`
-		Adults   int    `json:"adults"`
-		Children int    `json:"children"`
+		Adults   *int   `json:"adults"`
+		Children *int   `json:"children"`
 	}
 	if !decode(w, r, &b) {
 		return
 	}
-	if (b.RSVP != "yes" && b.RSVP != "no") || b.Adults < 0 || b.Children < 0 || (b.RSVP == "yes" && b.Adults == 0 && b.Children == 0) {
+	partial := b.RSVP == "yes" && b.Adults == nil && b.Children == nil
+	adults, children := 0, 0
+	if b.Adults != nil {
+		adults = *b.Adults
+	}
+	if b.Children != nil {
+		children = *b.Children
+	}
+	if (b.RSVP != "yes" && b.RSVP != "no") || adults < 0 || children < 0 ||
+		(b.RSVP == "yes" && !partial && (b.Adults == nil || b.Children == nil || (adults == 0 && children == 0))) {
 		fail(w, 400, "Indica si asistirás y cuántas personas vendrán")
 		return
 	}
@@ -146,10 +156,16 @@ func (s *Server) rsvp(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	// Retrying the initial acceptance must never erase a completed headcount.
+	if partial && f.RSVP == "yes" {
+		send(w, 200, public(f))
+		return
+	}
 	rev := f.Revision
 	f.RSVP = b.RSVP
-	f.Adults = b.Adults
-	f.Children = b.Children
+	f.Adults = adults
+	f.Children = children
+	f.HeadcountUnknown = partial
 	if b.RSVP == "no" {
 		f.Adults = 0
 		f.Children = 0

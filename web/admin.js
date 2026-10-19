@@ -85,9 +85,10 @@ function render() {
       ]
     : [
         [attending.length, "Familias confirmadas"],
+        [attending.filter(f => f.headcountUnknown).length, "Familias con cantidad pendiente"],
         [
           attending.reduce((n, f) => n + f.adults + f.children, 0),
-          "Personas confirmadas",
+          "Personas con cantidad registrada",
         ],
         [families.filter((f) => f.rsvp === "no").length, "No asistirán"],
         [families.filter((f) => f.rsvp === "pending").length, "Sin respuesta"],
@@ -103,7 +104,7 @@ function render() {
     shown
       .map(
         (f) =>
-          `<tr data-id="${esc(f.id)}"><td><strong>${esc(f.name)}</strong><small>${esc(f.phone)}</small>${!isSend ? `<small>${esc(f.email)}</small>` : ""}</td><td>${badge(f.rsvp, f.rsvp === "pending" ? "Sin respuesta" : null)}${f.rsvp === "yes" ? `<small>${f.adults} adultos · ${f.children} niños</small>` : ""}</td><td>${badge(f.status)}<small>${esc(f.channel || "")}</small>${f.history?.length ? `<details><summary>Historial</summary>${f.history.map((e) => `<p>${esc(labels[e.status] || e.status)} · ${esc(e.at)}<br>${esc(e.actor)} ${esc(e.detail || "")}</p>`).join("")}</details>` : ""}</td><td>${esc(f.assignedName || "Sin asignar")}</td>${isSend ? `<td><div class="row-actions"><button data-action="copy">Copiar mensaje</button><a href="sms:${esc(f.phone)}?body=${encodeURIComponent(message(f))}">Abrir SMS</a><button data-action="whatsapp">WhatsApp</button><button data-action="manual-sms">Marcar SMS enviado</button><button data-action="manual-whatsapp">Marcar WhatsApp enviado</button>${f.assignedTo ? '<button data-action="release">Liberar asignación</button>' : ""}${f.status !== "pending" ? '<button data-action="reset">Preparar reenvío</button>' : ""}${f.status === "sending" ? '<button data-action="uncertain">Marcar por verificar</button>' : ""}</div></td>` : `<td>${f.updatedAt ? esc(new Date(f.updatedAt).toLocaleString("es-MX")) : "—"}</td>`}</tr>`,
+          `<tr data-id="${esc(f.id)}"><td><strong>${esc(f.name)}</strong><small>${esc(f.phone)}</small>${!isSend ? `<small>${esc(f.email)}</small>` : ""}</td><td>${badge(f.rsvp, f.rsvp === "pending" ? "Sin respuesta" : null)}${f.rsvp === "yes" ? `<small>${f.headcountUnknown ? "Cantidad de personas pendiente" : `${f.adults} adultos · ${f.children} niños`}</small>` : ""}</td><td>${badge(f.status)}<small>${esc(f.channel || "")}</small>${f.history?.length ? `<details><summary>Historial</summary>${f.history.map((e) => `<p>${esc(labels[e.status] || e.status)} · ${esc(e.at)}<br>${esc(e.actor)} ${esc(e.detail || "")}</p>`).join("")}</details>` : ""}</td><td>${esc(f.assignedName || "Sin asignar")}</td>${isSend ? `<td><div class="row-actions"><button data-action="copy">Copiar mensaje</button><a href="sms:${esc(f.phone)}?body=${encodeURIComponent(message(f))}">Abrir SMS</a><button data-action="whatsapp">WhatsApp</button><button data-action="manual-sms">Marcar SMS enviado</button><button data-action="manual-whatsapp">Marcar WhatsApp enviado</button>${f.assignedTo ? '<button data-action="release">Liberar asignación</button>' : ""}${f.status !== "pending" ? '<button data-action="reset">Preparar reenvío</button>' : ""}${f.status === "sending" ? '<button data-action="uncertain">Marcar por verificar</button>' : ""}</div></td>` : `<td>${f.updatedAt ? esc(new Date(f.updatedAt).toLocaleString("es-MX")) : "—"}</td>`}</tr>`,
       )
       .join("") ||
     '<tr><td colspan="5">No hay familias para este filtro.</td></tr>';
@@ -277,6 +278,7 @@ $("#export").onclick = () => {
       "Asistencia",
       "Adultos",
       "Niños",
+      "Cantidad pendiente",
       "Envío",
       "Canal",
       "Asignado",
@@ -286,8 +288,9 @@ $("#export").onclick = () => {
       f.phone,
       f.email,
       f.rsvp,
-      f.adults,
-      f.children,
+      f.headcountUnknown ? "" : f.adults,
+      f.headcountUnknown ? "" : f.children,
+      f.headcountUnknown ? "Sí" : "No",
       f.status,
       f.channel,
       f.assignedName,

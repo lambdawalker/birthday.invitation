@@ -5,6 +5,7 @@ let family = null, busy = false;
 async function api(path, body) {
   const r = await fetch(path, {
     method: body ? "POST" : "GET",
+    keepalive: Boolean(body),
     headers: body ? { "Content-Type": "application/json" } : {},
     body: body ? JSON.stringify(body) : undefined,
   });
@@ -17,8 +18,11 @@ function render(editing = false) {
   const answered = family && ["yes", "no"].includes(family.rsvp) && !editing;
   $("#rsvp-actions").hidden = answered;
   $("#rsvp-saved").hidden = !answered;
+  $("#rsvp-complete").hidden = !(answered && family.rsvp === "yes" && family.headcountUnknown);
+  const total = family ? family.adults + family.children : 0;
   if (answered) $("#rsvp-choice").textContent = family.rsvp === "yes"
-    ? `Confirmado: ¡sí asistiremos! · ${family.adults + family.children} personas`
+    ? family.headcountUnknown ? "Asistencia confirmada · Número de personas pendiente"
+    : `Confirmado: ¡sí ${total === 1 ? "asistiré" : "asistiremos"}! · ${total} ${total === 1 ? "persona" : "personas"}`
     : "Respuesta: no podremos asistir";
 }
 function setBusy(value) {
@@ -38,23 +42,37 @@ async function save(rsvp) {
   status.textContent = "Guardando…";
   $("#rsvp-dialog-status").textContent = "Guardando…";
   try {
-    await api(`/api/invitations/${token}/rsvp`, data);
-    family = { ...family, ...data };
+    family = await api(`/api/invitations/${token}/rsvp`, data);
     render();
     dialog.close();
-    status.textContent = "Tu respuesta quedó guardada. ¡Gracias!";
+    status.textContent = "";
   } catch (err) {
     status.textContent = err.message;
     $("#rsvp-dialog-status").textContent = err.message;
   } finally { setBusy(false); }
 }
-$("#rsvp-yes").onclick = () => {
+function openCounts() {
   if (!family || busy) return;
-  form.elements.adults.value = family.rsvp === "yes" ? family.adults : 1;
-  form.elements.children.value = family.rsvp === "yes" ? family.children : 0;
+  form.elements.adults.value = family.rsvp === "yes" && !family.headcountUnknown ? family.adults : 1;
+  form.elements.children.value = family.rsvp === "yes" && !family.headcountUnknown ? family.children : 0;
   $("#rsvp-dialog-status").textContent = "";
   dialog.showModal();
+}
+$("#rsvp-yes").onclick = async () => {
+  if (!family || busy) return;
+  setBusy(true);
+  status.textContent = "Guardando…";
+  try {
+    family = await api(`/api/invitations/${token}/rsvp`, { rsvp: "yes" });
+    render();
+    status.textContent = "";
+    setBusy(false);
+    openCounts();
+  } catch (error) {
+    status.textContent = error.message;
+  } finally { setBusy(false); }
 };
+$("#rsvp-complete").onclick = openCounts;
 $("#rsvp-no").onclick = () => save("no");
 $("#rsvp-change").onclick = () => { render(true); status.textContent = "Elige tu nueva respuesta."; };
 $("#rsvp-cancel").onclick = () => dialog.close();

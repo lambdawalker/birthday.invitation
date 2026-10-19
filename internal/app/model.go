@@ -19,23 +19,24 @@ type Event struct {
 	Detail  string `json:"detail,omitempty"`
 }
 type Family struct {
-	CreatedBy    string  `json:"createdBy,omitempty"`
-	CreatedName  string  `json:"createdName,omitempty"`
-	ID           string  `json:"id"`
-	Name         string  `json:"name"`
-	Phone        string  `json:"phone"`
-	Email        string  `json:"email,omitempty"`
-	RSVP         string  `json:"rsvp"`
-	Adults       int     `json:"adults"`
-	Children     int     `json:"children"`
-	Status       string  `json:"status"`
-	Channel      string  `json:"channel,omitempty"`
-	AssignedTo   string  `json:"assignedTo,omitempty"`
-	AssignedName string  `json:"assignedName,omitempty"`
-	AttemptID    string  `json:"attemptId,omitempty"`
-	UpdatedAt    string  `json:"updatedAt,omitempty"`
-	Revision     int     `json:"revision"`
-	History      []Event `json:"history"`
+	HeadcountUnknown bool    `json:"headcountUnknown"`
+	CreatedBy        string  `json:"createdBy,omitempty"`
+	CreatedName      string  `json:"createdName,omitempty"`
+	ID               string  `json:"id"`
+	Name             string  `json:"name"`
+	Phone            string  `json:"phone"`
+	Email            string  `json:"email,omitempty"`
+	RSVP             string  `json:"rsvp"`
+	Adults           int     `json:"adults"`
+	Children         int     `json:"children"`
+	Status           string  `json:"status"`
+	Channel          string  `json:"channel,omitempty"`
+	AssignedTo       string  `json:"assignedTo,omitempty"`
+	AssignedName     string  `json:"assignedName,omitempty"`
+	AttemptID        string  `json:"attemptId,omitempty"`
+	UpdatedAt        string  `json:"updatedAt,omitempty"`
+	Revision         int     `json:"revision"`
+	History          []Event `json:"history"`
 }
 type Device struct {
 	ID        string `json:"id"`
