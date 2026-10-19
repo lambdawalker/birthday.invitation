@@ -44,7 +44,7 @@ func CheckTools() error {
 		}
 	}
 	if len(missing) > 0 {
-		return fmt.Errorf("instala primero: %s. Consulta README.md", strings.Join(missing, ", "))
+		return fmt.Errorf("install these tools first: %s. See README.md", strings.Join(missing, ", "))
 	}
 	return nil
 }
@@ -54,9 +54,10 @@ type commandResult struct {
 	err            error
 }
 type wizard struct {
-	root   string
-	input  io.Reader
-	output io.Writer
+	root       string
+	input      io.Reader
+	output     io.Writer
+	newCommand func(string, ...string) *exec.Cmd
 }
 type aborted struct{ err error }
 
@@ -90,7 +91,7 @@ func (w *wizard) ask(prompt, def string) string {
 			b.WriteByte(one[0])
 		}
 		if err != nil {
-			stop(fmt.Errorf("entrada cancelada: %w", err))
+			stop(fmt.Errorf("input cancelled: %w", err))
 		}
 	}
 	answer := strings.TrimSpace(b.String())
@@ -104,19 +105,28 @@ func (w *wizard) secret(env, label string) string {
 		return s
 	}
 	if !term.IsTerminal(int(os.Stdin.Fd())) {
-		stop(fmt.Errorf("%s requiere una terminal para ocultar la entrada; también puedes configurar %s", label, env))
+		stop(fmt.Errorf("%s requires a terminal for hidden input; alternatively, set %s", label, env))
 	}
-	fmt.Fprintf(w.output, "%s (oculto): ", label)
+	fmt.Fprintf(w.output, "%s (hidden): ", label)
 	b, err := term.ReadPassword(int(os.Stdin.Fd()))
 	fmt.Fprintln(w.output)
 	stop(err)
 	if len(b) == 0 {
-		stop(errors.New("el secreto no puede estar vacío"))
+		stop(errors.New("the secret must not be empty"))
 	}
 	return string(b)
 }
 func (w *wizard) command(dir, input string, capture bool, args ...string) commandResult {
-	cmd := exec.Command(args[0], args[1:]...)
+	// Machine-readable output must not inherit a user's text/table/yaml profile.
+	// Command-line options override AWS_DEFAULT_OUTPUT without modifying it.
+	if capture && args[0] == "aws" {
+		args = append(append([]string(nil), args...), "--output", "json", "--no-cli-pager", "--color", "off")
+	}
+	newCommand := w.newCommand
+	if newCommand == nil {
+		newCommand = exec.Command
+	}
+	cmd := newCommand(args[0], args[1:]...)
 	cmd.Dir = dir
 	if input != "" {
 		cmd.Stdin = strings.NewReader(input)
@@ -137,7 +147,7 @@ func (w *wizard) command(dir, input string, capture bool, args ...string) comman
 func (w *wizard) must(input string, capture bool, args ...string) string {
 	r := w.command(filepath.Join(w.root, "infra"), input, capture, args...)
 	if r.err != nil {
-		stop(fmt.Errorf("falló %s: %w. Revisa credenciales, permisos y el estado; no se revirtieron recursos", args[0], r.err))
+		stop(fmt.Errorf("%s failed: %w. Check credentials, permissions and stack state; resources were not rolled back", args[0], r.err))
 	}
 	return r.stdout
 }
@@ -153,37 +163,37 @@ func Deploy(root string) (err error) {
 		}
 	}()
 	w := &wizard{root: root, input: os.Stdin, output: os.Stdout}
-	fmt.Fprintln(w.output, "\n✦ ABI · Despliegue de la aldea\n  Go + AWS + Cloudflare · estado privado en S3")
-	w.step(1, "Revisar herramientas")
+	fmt.Fprintln(w.output, "\n✦ ABI · Deployment wizard\n  Go + AWS + Cloudflare · private S3 state")
+	w.step(1, "Check prerequisites")
 	stop(CheckTools())
-	w.step(2, "Conectar con AWS")
-	profile := w.ask("Perfil AWS SSO", "default")
+	w.step(2, "Connect to AWS")
+	profile := w.ask("AWS SSO profile", "default")
 	stop(os.Setenv("AWS_PROFILE", profile))
 	stop(os.Setenv("AWS_PAGER", ""))
 	if r := w.command(root, "", true, "aws", "sts", "get-caller-identity"); r.err != nil {
-		fmt.Fprintln(w.output, "Si no configuraste el perfil, ejecuta aws configure sso primero.")
+		fmt.Fprintln(w.output, "AWS credentials are unavailable or expired. Starting SSO login. If this profile is not configured, run aws configure sso first.")
 		w.must("", false, "aws", "sso", "login", "--profile", profile)
 	}
 	var identity struct{ Account string }
-	stop(json.Unmarshal([]byte(w.must("", true, "aws", "sts", "get-caller-identity")), &identity))
+	stop(decodeCommandJSON("aws sts get-caller-identity", w.must("", true, "aws", "sts", "get-caller-identity"), &identity))
 	if identity.Account == "" {
-		stop(errors.New("AWS no devolvió el ID de cuenta"))
+		stop(errors.New("AWS did not return an account ID"))
 	}
-	fmt.Fprintln(w.output, "Cuenta AWS:", identity.Account)
-	region := w.ask("Región AWS", "us-east-1")
+	fmt.Fprintln(w.output, "AWS account:", identity.Account)
+	region := w.ask("AWS region", "us-east-1")
 	stop(os.Setenv("AWS_REGION", region))
 	stop(os.Setenv("AWS_DEFAULT_REGION", region))
-	w.step(3, "Preparar estado Pulumi privado")
-	bucket := w.ask("Bucket de estado", "abi-pulumi-"+identity.Account+"-"+region)
+	w.step(3, "Prepare private Pulumi state")
+	bucket := w.ask("State bucket", "abi-pulumi-"+identity.Account+"-"+region)
 	if !ValidBucket(bucket) {
-		stop(errors.New("nombre de bucket inválido"))
+		stop(errors.New("invalid bucket name"))
 	}
 	head := w.command(root, "", true, "aws", "s3api", "head-bucket", "--bucket", bucket)
 	if head.err != nil {
 		if !strings.Contains(head.stderr, "404") && !strings.Contains(head.stderr, "Not Found") {
-			stop(errors.New("no se pudo acceder al bucket; revisa permisos. No se intentará crearlo a ciegas"))
+			stop(errors.New("cannot access the state bucket; check permissions. It will not be created without confirming that it is missing"))
 		}
-		if w.ask("Crear el bucket de estado (genera recursos AWS)? Escribe CREAR", "") != "CREAR" {
+		if w.ask("Create the state bucket (creates AWS resources)? Type CREATE", "") != "CREATE" {
 			return nil
 		}
 		args := []string{"aws", "s3api", "create-bucket", "--bucket", bucket}
@@ -195,17 +205,17 @@ func Deploy(root string) (err error) {
 	w.must("", true, "aws", "s3api", "put-public-access-block", "--bucket", bucket, "--public-access-block-configuration", "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true")
 	w.must("", true, "aws", "s3api", "put-bucket-versioning", "--bucket", bucket, "--versioning-configuration", "Status=Enabled")
 	w.must("", true, "aws", "s3api", "put-bucket-encryption", "--bucket", bucket, "--server-side-encryption-configuration", `{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}`)
-	stop(os.Setenv("PULUMI_CONFIG_PASSPHRASE", w.secret("PULUMI_CONFIG_PASSPHRASE", "Frase de cifrado Pulumi (guárdala y reutilízala)")))
+	stop(os.Setenv("PULUMI_CONFIG_PASSPHRASE", w.secret("PULUMI_CONFIG_PASSPHRASE", "Pulumi encryption passphrase (save it and reuse it)")))
 	w.must("", false, "pulumi", "login", "s3://"+bucket+"/birthday-invitation")
 	stack := w.ask("Stack", "production")
 	if !regexp.MustCompile(`^[a-zA-Z0-9_-]+$`).MatchString(stack) {
-		stop(errors.New("nombre de stack inválido"))
+		stop(errors.New("invalid stack name"))
 	}
 	// A failed select can mean a network/auth error, not a missing stack.
 	var stacks []struct {
 		Name string `json:"name"`
 	}
-	stop(json.Unmarshal([]byte(w.must("", true, "pulumi", "stack", "ls", "--json")), &stacks))
+	stop(decodeCommandJSON("pulumi stack ls --json", w.must("", true, "pulumi", "stack", "ls", "--json"), &stacks))
 	exists := false
 	for _, s := range stacks {
 		if s.Name == stack || strings.HasSuffix(s.Name, "/"+stack) {
@@ -217,18 +227,18 @@ func Deploy(root string) (err error) {
 	} else {
 		w.must("", false, "pulumi", "stack", "init", stack, "--secrets-provider", "passphrase")
 	}
-	w.step(4, "Dominio y secretos")
-	domain := w.ask("Dominio", "xitlaliabigail.com")
+	w.step(4, "Domain and secrets")
+	domain := w.ask("Domain", "xitlaliabigail.com")
 	zone := w.ask("Cloudflare Zone ID", "")
 	if zone == "" {
-		stop(errors.New("falta Cloudflare Zone ID"))
+		stop(errors.New("Cloudflare Zone ID is required"))
 	}
-	stop(os.Setenv("CLOUDFLARE_API_TOKEN", w.secret("CLOUDFLARE_API_TOKEN", "Token Cloudflare (DNS Edit y Zone Read, solo esta zona)")))
+	stop(os.Setenv("CLOUDFLARE_API_TOKEN", w.secret("CLOUDFLARE_API_TOKEN", "Cloudflare token (DNS Edit and Zone Read, scoped to this zone)")))
 	for _, pair := range [][2]string{{"aws:region", region}, {"domain", domain}, {"cloudflareZoneId", zone}} {
 		w.must("", false, "pulumi", "config", "set", pair[0], pair[1])
 	}
 	var configs map[string]json.RawMessage
-	stop(json.Unmarshal([]byte(w.must("", true, "pulumi", "config", "--json")), &configs))
+	stop(decodeCommandJSON("pulumi config --json", w.must("", true, "pulumi", "config", "--json"), &configs))
 	for _, name := range []string{"adminKey", "importNamespace"} {
 		if _, ok := configs["birthday-invitation:"+name]; ok {
 			continue
@@ -241,19 +251,27 @@ func Deploy(root string) (err error) {
 		stop(e)
 		w.must(base64.RawURLEncoding.EncodeToString(b)+"\n", true, "pulumi", "config", "set", name, "--secret")
 	}
-	fmt.Fprintln(w.output, "Claves cifradas. No se muestran en registros.")
-	w.step(5, "Compilar y revisar")
+	fmt.Fprintln(w.output, "Secrets encrypted. Values are not printed to logs.")
+	w.step(5, "Build and preview")
 	stop(Build(root))
 	r := w.command(root, "", false, "go", "build", "-o", filepath.Join(root, "build", "infra-check"), "./infra")
 	stop(r.err)
 	w.must("", false, "pulumi", "preview", "--diff")
-	w.step(6, "Desplegar")
-	if w.ask("Revisa los cambios. Escribe DESPLEGAR para aplicarlos", "") != "DESPLEGAR" {
-		fmt.Fprintln(w.output, "Sin cambios en la aplicación. El bucket de estado puede haber sido preparado.")
+	w.step(6, "Deploy")
+	if w.ask("Review the preview. Type DEPLOY to apply it", "") != "DEPLOY" {
+		fmt.Fprintln(w.output, "No application changes applied. The state bucket may already have been prepared.")
 		return nil
 	}
 	w.must("", false, "pulumi", "up", "--yes", "--skip-preview")
-	fmt.Fprintln(w.output, "\n✓ Listo. Abre https://"+domain+"/admin.html")
-	fmt.Fprintln(w.output, "Desde infra: pulumi config get adminKey (en privado). Para importar: pulumi config get importNamespace y pulumi stack output tableName.")
+	fmt.Fprintln(w.output, "\n✓ Done. Open https://"+domain+"/admin.html")
+	fmt.Fprintln(w.output, "From infra: pulumi config get adminKey (privately). For imports: pulumi config get importNamespace and pulumi stack output tableName.")
+	return nil
+}
+
+// Do not include raw responses: config JSON can contain sensitive information.
+func decodeCommandJSON(command, output string, target any) error {
+	if err := json.Unmarshal([]byte(output), target); err != nil {
+		return fmt.Errorf("%s did not return valid JSON. Check the CLI installation and any command wrappers: %w", command, err)
+	}
 	return nil
 }
