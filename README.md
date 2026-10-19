@@ -139,6 +139,15 @@ pointer press, wheel input, keyboard input or manual scroll stops it for that pa
 visit. It also stops when the page is hidden and respects reduced-motion settings.
 The gift image links to the gift section; parking content has been removed.
 
+### Partial RSVP
+
+The positive guest action immediately saves acceptance with an unknown headcount,
+then opens the counts form. Closing the form or leaving the page retains that
+acceptance. Returning guests see Complete number of people alongside Change
+response. The report counts these families as confirmed and shows their quantities
+as pending. A successful save still requires the device to reach the server;
+requests use fetch keepalive to help finish during navigation.
+
 ### Mobile web sender
 
 Deploy normally, then open `/sender.html` on your phone. Administrators create a

@@ -65,3 +65,17 @@ Retries are safe by normalized phone identity, including after response loss or 
 `DELETE /api/families/{id}` requires an app bearer token (assigned owner) or admin session. Returns `{"deleted":true}`. Unassigned families must first be claimed by the app user. Another user's assignment returns 403. Sending, uncertain, and unverified WhatsApp states return 409 until resolved. Concurrent changes also return 409; refresh before trying again.
 
 Deletion removes the family, RSVP/history and phone reservation atomically. Its old invitation URL returns 404. Re-importing the number from Android creates a new invitation. Pulumi adds `dynamodb:DeleteItem`; deploy the backend/infrastructure before Android 1.3.0. App deletion requires an online connection, no unsynced local events for the family, and explicit confirmation. Phone address-book entries are never deleted.
+
+### Immediate acceptance with an unknown headcount
+
+`POST /api/invitations/{id}/rsvp` with `{"rsvp":"yes"}` immediately records
+acceptance and `headcountUnknown: true`. Omit both count fields for this step.
+The invitation response and admin roster expose that flag; stored zero count
+fields are placeholders, not a known zero-person attendance.
+
+Send `{"rsvp":"yes","adults":2,"children":1}` to finish. Both counts are
+required for a complete response and at least one person must attend. A repeated
+count-free acceptance preserves an existing complete headcount. Declining clears
+counts and the unknown flag. Existing records default to a known headcount, so
+no database migration is needed. Reports distinguish pending quantities and CSV
+exports leave those count cells blank.
