@@ -9,11 +9,14 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"golang.org/x/term"
 )
@@ -167,7 +170,7 @@ func Deploy(root string) (err error) {
 	w.step(1, "Check prerequisites")
 	stop(CheckTools())
 	w.step(2, "Connect to AWS")
-	profile := w.ask("AWS SSO profile", "default")
+	profile := w.ask("AWS SSO profile", envDefault("AWS_PROFILE", "default"))
 	stop(os.Setenv("AWS_PROFILE", profile))
 	stop(os.Setenv("AWS_PAGER", ""))
 	if r := w.command(root, "", true, "aws", "sts", "get-caller-identity"); r.err != nil {
@@ -193,7 +196,7 @@ func Deploy(root string) (err error) {
 		if !strings.Contains(head.stderr, "404") && !strings.Contains(head.stderr, "Not Found") {
 			stop(errors.New("cannot access the state bucket; check permissions. It will not be created without confirming that it is missing"))
 		}
-		if w.ask("Create the state bucket (creates AWS resources)? Type CREATE", "") != "CREATE" {
+		if w.ask("Create the state bucket (creates AWS resources)? press Enter to CREATE, or type CANCEL", "CREATE") != "CREATE" {
 			return nil
 		}
 		args := []string{"aws", "s3api", "create-bucket", "--bucket", bucket}
@@ -229,11 +232,16 @@ func Deploy(root string) (err error) {
 	}
 	w.step(4, "Domain and secrets")
 	domain := w.ask("Domain", "xitlaliabigail.com")
-	zone := w.ask("Cloudflare Zone ID", "")
-	if zone == "" {
-		stop(errors.New("Cloudflare Zone ID is required"))
-	}
+	zone := w.ask("Cloudflare Zone ID (auto detects the domain)", envDefault("CLOUDFLARE_ZONE_ID", "auto"))
+
 	stop(os.Setenv("CLOUDFLARE_API_TOKEN", w.secret("CLOUDFLARE_API_TOKEN", "Cloudflare token (DNS Edit and Zone Read, scoped to this zone)")))
+	if strings.EqualFold(zone, "auto") {
+		var err error
+		zone, err = lookupZone(&http.Client{Timeout: 30 * time.Second}, "https://api.cloudflare.com/client/v4", domain, os.Getenv("CLOUDFLARE_API_TOKEN"))
+		stop(err)
+		fmt.Fprintln(w.output, "Cloudflare Zone ID:", zone)
+	}
+
 	for _, pair := range [][2]string{{"aws:region", region}, {"domain", domain}, {"cloudflareZoneId", zone}} {
 		w.must("", false, "pulumi", "config", "set", pair[0], pair[1])
 	}
@@ -258,7 +266,7 @@ func Deploy(root string) (err error) {
 	stop(r.err)
 	w.must("", false, "pulumi", "preview", "--diff")
 	w.step(6, "Deploy")
-	if w.ask("Review the preview. Type DEPLOY to apply it", "") != "DEPLOY" {
+	if w.ask("Review the preview. Press Enter to DEPLOY, or type CANCEL", "DEPLOY") != "DEPLOY" {
 		fmt.Fprintln(w.output, "No application changes applied. The state bucket may already have been prepared.")
 		return nil
 	}
@@ -274,4 +282,43 @@ func decodeCommandJSON(command, output string, target any) error {
 		return fmt.Errorf("%s did not return valid JSON. Check the CLI installation and any command wrappers: %w", command, err)
 	}
 	return nil
+}
+
+func envDefault(name, fallback string) string {
+	if value := strings.TrimSpace(os.Getenv(name)); value != "" {
+		return value
+	}
+	return fallback
+}
+
+// Resolve the exact domain only; never silently select another accessible zone.
+func lookupZone(client *http.Client, baseURL, domain, token string) (string, error) {
+	domain = strings.ToLower(strings.TrimSuffix(strings.TrimSpace(domain), "."))
+	req, err := http.NewRequest(http.MethodGet, baseURL+"/zones?name="+url.QueryEscape(domain), nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("Cloudflare zone lookup failed; check your connection or enter the Zone ID manually")
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("Cloudflare zone lookup returned HTTP %d; check token Zone Read permission or enter the Zone ID manually", resp.StatusCode)
+	}
+	var body struct {
+		Success bool `json:"success"`
+		Result  []struct {
+			ID   string `json:"id"`
+			Name string `json:"name"`
+		} `json:"result"`
+	}
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&body); err != nil {
+		return "", errors.New("Cloudflare zone lookup returned invalid JSON")
+	}
+	if !body.Success || len(body.Result) != 1 || body.Result[0].ID == "" || !strings.EqualFold(body.Result[0].Name, domain) {
+		return "", errors.New("Cloudflare did not return exactly one matching zone; check the domain and token scope or enter the Zone ID manually")
+	}
+	return body.Result[0].ID, nil
 }
