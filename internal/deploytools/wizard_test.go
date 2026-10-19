@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"strings"
@@ -72,5 +74,49 @@ func TestJSONErrorNamesCommandWithoutLeakingOutput(t *testing.T) {
 	}
 	if strings.Contains(err.Error(), "private-account-data") {
 		t.Fatal("raw response leaked")
+	}
+}
+
+func TestPromptDefaultsAndOverride(t *testing.T) {
+	w := &wizard{input: strings.NewReader("\r\nCANCEL\r\n"), output: io.Discard}
+	if got := w.ask("Create bucket", "CREATE"); got != "CREATE" {
+		t.Fatal(got)
+	}
+	if got := w.ask("Deploy", "DEPLOY"); got != "CANCEL" {
+		t.Fatal(got)
+	}
+}
+
+func TestLookupZone(t *testing.T) {
+	for _, tc := range []struct {
+		name, body string
+		status     int
+		ok         bool
+	}{
+		{"matching", `{"success":true,"result":[{"id":"zone123","name":"xitlaliabigail.com"}]}`, 200, true},
+		{"missing", `{"success":true,"result":[]}`, 200, false},
+		{"wrong domain", `{"success":true,"result":[{"id":"zone123","name":"other.com"}]}`, 200, false},
+		{"denied", `secret response`, 403, false},
+		{"invalid", `secret response`, 200, false},
+		{"api failure", `{"success":false,"result":[]}`, 200, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/zones" || r.URL.Query().Get("name") != "xitlaliabigail.com" || r.Header.Get("Authorization") != "Bearer test-token" {
+					t.Error("incorrect lookup request")
+				}
+				w.WriteHeader(tc.status)
+				fmt.Fprint(w, tc.body)
+			}))
+			defer server.Close()
+			id, err := lookupZone(server.Client(), server.URL, "xitlaliabigail.com", "test-token")
+			if tc.ok {
+				if err != nil || id != "zone123" {
+					t.Fatalf("%s %v", id, err)
+				}
+			} else if err == nil || strings.Contains(err.Error(), "secret response") || strings.Contains(err.Error(), "test-token") {
+				t.Fatalf("unsafe or missing error: %v", err)
+			}
+		})
 	}
 }

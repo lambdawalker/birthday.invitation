@@ -30,10 +30,10 @@ The local database is in memory and resets on restart. The admin key above is on
 Prerequisites: Go (version in `go.mod`), AWS CLI v2, and Pulumi CLI (compatible with the pinned Go SDK). Python, Node.js and npm are not required. Install from their official sites. You do **not** need a Pulumi account.
 
 1. Configure AWS SSO with `aws configure sso` and select a role permitted to create the stack resources.
-2. Add the domain to Cloudflare and activate its nameservers. Obtain the Zone ID and a token scoped to that zone with **DNS Edit** and **Zone Read**.
+2. Add the domain to Cloudflare and activate its nameservers. Obtain a token scoped to that zone with **DNS Edit** and **Zone Read**.
 3. Run `deploy.bat` on Windows (PowerShell: `.\deploy.bat`) or `./deploy.sh` on Linux from the repository root. Both launch the Go wizard and also work when invoked using their full path from another directory.
 4. The wizard checks tools, logs in with AWS SSO when needed, creates/uses an encrypted versioned private S3 state bucket, asks for a Pulumi encryption passphrase, and requests the Cloudflare token without echoing it.
-5. It generates encrypted admin/import secrets, compiles the Lambda, compiles the Go infrastructure, and runs `pulumi preview`. Type `DEPLOY` to apply. State bootstrap has its own `CREATE` prompt.
+5. It generates encrypted admin/import secrets, compiles the Lambda, compiles the Go infrastructure, and runs `pulumi preview`. Press Enter to accept `DEPLOY` after reviewing the preview, or type `CANCEL` to stop. State bootstrap defaults to `CREATE`; Enter creates the bucket if it is missing.
 6. Save the passphrase in your password manager; use the same passphrase and state bucket for later updates. Do not rotate `importNamespace` between imports.
 7. From `infra`, use `pulumi config get adminKey` in a private terminal to obtain your administrator key. Open `/admin.html`.
 
@@ -76,10 +76,16 @@ The root Go module contains `cmd/server`, `cmd/lambda`, `cmd/import-guests`, `cm
 
 CI runs tests, vet, Lambda packaging and deployment/infrastructure compilation on Windows and Linux; Linux also runs race detection. Pulumi mock tests exercise the resource graph without cloud credentials. They do not substitute for reviewing `pulumi preview` against your AWS account. No deployment is performed by CI.
 
-The Go infrastructure uses Pulumi’s core `RegisterResource` API with pinned AWS/Cloudflare provider versions, preserving the existing resource types, logical names, configuration keys and exports. Existing stacks keep their S3 backend and passphrase: do not create a replacement stack or rotate importNamespace. Review the preview for unexpected replacements before typing DEPLOY. Old Python and TypeScript tooling has been removed.
+The Go infrastructure uses Pulumi’s core `RegisterResource` API with pinned AWS/Cloudflare provider versions, preserving the existing resource types, logical names, configuration keys and exports. Existing stacks keep their S3 backend and passphrase: do not create a replacement stack or rotate importNamespace. Review the preview for unexpected replacements before accepting DEPLOY. Old Python and TypeScript tooling has been removed.
 
 Hidden prompts require an interactive terminal. For an existing shell-managed setup, the wizard can also read `PULUMI_CONFIG_PASSPHRASE` and `CLOUDFLARE_API_TOKEN` from the environment. Never paste these into command-line arguments or commit them. The deployment wizard still asks you to review and approve the preview.
 
 AWS provisioning, carrier delivery and physical Android permissions require your environment. See the [API contract](docs/api.md). The earlier design and plan under `docs/superpowers/` are historical; this README documents the current Go layout.
 
 Developer tooling, deployment prompts and diagnostics are in English; the guest invitation remains in Spanish. Machine-read AWS commands explicitly request JSON output, so profiles configured for text, table or YAML do not need to be changed.
+
+### Deployment prompt defaults
+
+Every non-secret prompt accepts Enter: AWS profile (`AWS_PROFILE` or `default`), region (`us-east-1`), state bucket (`abi-pulumi-<account>-<region>`), bucket creation (`CREATE`), stack (`production`), domain (`xitlaliabigail.com`), Cloudflare Zone ID (`CLOUDFLARE_ZONE_ID` or `auto`), and final deployment (`DEPLOY`). Enter `CANCEL` at either confirmation to stop.
+
+The `auto` Zone ID default looks up the exact domain using your Cloudflare token; you can enter the Zone ID manually instead. Tokens and the Pulumi encryption passphrase have no default and remain hidden, or can be supplied through their existing environment variables.
