@@ -89,3 +89,8 @@ Developer tooling, deployment prompts and diagnostics are in English; the guest 
 Every non-secret prompt accepts Enter: AWS profile (`AWS_PROFILE` or `default`), region (`us-east-1`), state bucket (`abi-pulumi-<account>-<region>`), bucket creation (`CREATE`), stack (`production`), domain (`xitlaliabigail.com`), Cloudflare Zone ID (`CLOUDFLARE_ZONE_ID` or `auto`), and final deployment (`DEPLOY`). Enter `CANCEL` at either confirmation to stop.
 
 The `auto` Zone ID default looks up the exact domain using your Cloudflare token; you can enter the Zone ID manually instead. Tokens and the Pulumi encryption passphrase have no default and remain hidden, or can be supplied through their existing environment variables.
+
+
+Edit [deploy.defaults.yaml](deploy.defaults.yaml) in the repository root to customize these non-secret defaults. Both launchers load it automatically, regardless of the directory you launch from. Omitted fields retain built-in defaults; a missing file also uses built-in defaults. Invalid or unknown fields fail before any cloud commands run.
+
+Typed answers override the displayed defaults. For the AWS profile and Cloudflare Zone ID, environment variables override the YAML defaults. The state bucket supports `{account}` and `{region}` placeholders, expanded after AWS login and region selection. Set either confirmation default to `CANCEL` if you prefer Enter to stop. Pulumi continues to use the existing `infra` project directory; no empty project directory is needed. Keep all tokens and the encryption passphrase outside this file.

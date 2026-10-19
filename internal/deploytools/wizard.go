@@ -165,12 +165,14 @@ func Deploy(root string) (err error) {
 			}
 		}
 	}()
+	defaults, configErr := loadDefaults(root)
+	stop(configErr)
 	w := &wizard{root: root, input: os.Stdin, output: os.Stdout}
 	fmt.Fprintln(w.output, "\n✦ ABI · Deployment wizard\n  Go + AWS + Cloudflare · private S3 state")
 	w.step(1, "Check prerequisites")
 	stop(CheckTools())
 	w.step(2, "Connect to AWS")
-	profile := w.ask("AWS SSO profile", envDefault("AWS_PROFILE", "default"))
+	profile := w.ask("AWS SSO profile", envDefault("AWS_PROFILE", defaults.AWSProfile))
 	stop(os.Setenv("AWS_PROFILE", profile))
 	stop(os.Setenv("AWS_PAGER", ""))
 	if r := w.command(root, "", true, "aws", "sts", "get-caller-identity"); r.err != nil {
@@ -183,11 +185,11 @@ func Deploy(root string) (err error) {
 		stop(errors.New("AWS did not return an account ID"))
 	}
 	fmt.Fprintln(w.output, "AWS account:", identity.Account)
-	region := w.ask("AWS region", "us-east-1")
+	region := w.ask("AWS region", defaults.AWSRegion)
 	stop(os.Setenv("AWS_REGION", region))
 	stop(os.Setenv("AWS_DEFAULT_REGION", region))
 	w.step(3, "Prepare private Pulumi state")
-	bucket := w.ask("State bucket", "abi-pulumi-"+identity.Account+"-"+region)
+	bucket := w.ask("State bucket", defaults.bucket(identity.Account, region))
 	if !ValidBucket(bucket) {
 		stop(errors.New("invalid bucket name"))
 	}
@@ -196,7 +198,7 @@ func Deploy(root string) (err error) {
 		if !strings.Contains(head.stderr, "404") && !strings.Contains(head.stderr, "Not Found") {
 			stop(errors.New("cannot access the state bucket; check permissions. It will not be created without confirming that it is missing"))
 		}
-		if w.ask("Create the state bucket (creates AWS resources)? press Enter to CREATE, or type CANCEL", "CREATE") != "CREATE" {
+		if w.ask("Create the state bucket (creates AWS resources)? enter CREATE or CANCEL", defaults.CreateStateBucket) != "CREATE" {
 			return nil
 		}
 		args := []string{"aws", "s3api", "create-bucket", "--bucket", bucket}
@@ -210,7 +212,7 @@ func Deploy(root string) (err error) {
 	w.must("", true, "aws", "s3api", "put-bucket-encryption", "--bucket", bucket, "--server-side-encryption-configuration", `{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}`)
 	stop(os.Setenv("PULUMI_CONFIG_PASSPHRASE", w.secret("PULUMI_CONFIG_PASSPHRASE", "Pulumi encryption passphrase (save it and reuse it)")))
 	w.must("", false, "pulumi", "login", "s3://"+bucket+"/birthday-invitation")
-	stack := w.ask("Stack", "production")
+	stack := w.ask("Stack", defaults.Stack)
 	if !regexp.MustCompile(`^[a-zA-Z0-9_-]+$`).MatchString(stack) {
 		stop(errors.New("invalid stack name"))
 	}
@@ -231,8 +233,8 @@ func Deploy(root string) (err error) {
 		w.must("", false, "pulumi", "stack", "init", stack, "--secrets-provider", "passphrase")
 	}
 	w.step(4, "Domain and secrets")
-	domain := w.ask("Domain", "xitlaliabigail.com")
-	zone := w.ask("Cloudflare Zone ID (auto detects the domain)", envDefault("CLOUDFLARE_ZONE_ID", "auto"))
+	domain := w.ask("Domain", defaults.Domain)
+	zone := w.ask("Cloudflare Zone ID (auto detects the domain)", envDefault("CLOUDFLARE_ZONE_ID", defaults.CloudflareZoneID))
 
 	stop(os.Setenv("CLOUDFLARE_API_TOKEN", w.secret("CLOUDFLARE_API_TOKEN", "Cloudflare token (DNS Edit and Zone Read, scoped to this zone)")))
 	if strings.EqualFold(zone, "auto") {
@@ -266,7 +268,7 @@ func Deploy(root string) (err error) {
 	stop(r.err)
 	w.must("", false, "pulumi", "preview", "--diff")
 	w.step(6, "Deploy")
-	if w.ask("Review the preview. Press Enter to DEPLOY, or type CANCEL", "DEPLOY") != "DEPLOY" {
+	if w.ask("Review the preview. Enter DEPLOY or CANCEL", defaults.Deploy) != "DEPLOY" {
 		fmt.Fprintln(w.output, "No application changes applied. The state bucket may already have been prepared.")
 		return nil
 	}

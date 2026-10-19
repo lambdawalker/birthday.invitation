@@ -1,0 +1,13 @@
+# Non-secret defaults for deploy.bat and deploy.sh.
+# Press Enter at a prompt to use its default; typed answers override this file.
+# AWS_PROFILE and CLOUDFLARE_ZONE_ID environment variables override those defaults.
+# Never put tokens, passwords, or the Pulumi encryption passphrase here.
+aws_profile: default
+aws_region: us-east-1
+# Expanded using the authenticated AWS account and the selected region:
+state_bucket: "abi-pulumi-{account}-{region}"
+create_state_bucket: CREATE # CREATE or CANCEL
+stack: production
+domain: xitlaliabigail.com
+cloudflare_zone_id: auto # Look up the exact domain, or set a Zone ID.
+deploy: DEPLOY # DEPLOY or CANCEL; the preview is always shown first.
