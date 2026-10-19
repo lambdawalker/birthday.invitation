@@ -107,7 +107,7 @@ func define(ctx *pulumi.Context) (err error) {
 	role := add(ctx, "aws:iam/role:Role", "api-role", M{"assumeRolePolicy": `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}`})
 	logs := add(ctx, "aws:cloudwatch/logGroup:LogGroup", "api-logs", M{"retentionInDays": 14})
 	policy := add(ctx, "aws:iam/rolePolicy:RolePolicy", "api-permissions", M{"role": role.ID(), "policy": jsonOutput([]pulumi.Input{table.Arn, logs.Arn}, func(v []any) any {
-		return M{"Version": "2012-10-17", "Statement": A{M{"Effect": "Allow", "Action": A{"dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Scan"}, "Resource": v[0]}, M{"Effect": "Allow", "Action": A{"logs:CreateLogStream", "logs:PutLogEvents"}, "Resource": fmt.Sprint(v[1]) + ":*"}}}
+		return M{"Version": "2012-10-17", "Statement": A{M{"Effect": "Allow", "Action": A{"dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem", "dynamodb:Scan"}, "Resource": v[0]}, M{"Effect": "Allow", "Action": A{"logs:CreateLogStream", "logs:PutLogEvents"}, "Resource": fmt.Sprint(v[1]) + ":*"}}}
 	})})
 	fn := add(ctx, "aws:lambda/function:Function", "api", M{"role": role.Arn, "runtime": "provided.al2023", "architectures": A{"arm64"}, "handler": "bootstrap", "code": pulumi.NewFileArchive("../build/lambda.zip"), "memorySize": 256, "timeout": 15, "loggingConfig": M{"logFormat": "Text", "logGroup": logs.Name}, "environment": M{"variables": M{"TABLE_NAME": table.Name, "ADMIN_KEY": admin, "SITE_URL": "https://" + domain}}}, pulumi.DependsOn([]pulumi.Resource{policy}))
 	api := add(ctx, "aws:apigatewayv2/api:Api", "http-api", M{"protocolType": "HTTP"})

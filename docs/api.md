@@ -59,3 +59,9 @@ Response: `{results:[{index,name,phone,status,familyId?,message?}]}`, where stat
 New rows have random 128-bit invitation IDs, pending RSVP/sending state, and `createdBy`/`createdName` metadata. New rows are assigned to the authenticated importer (administrator-created rows remain unassigned). Existing rows are never overwritten or reassigned. Family creation and a `P#<SHA256(normalized phone)>` reservation are one DynamoDB transaction with conditional puts. Transient transaction contention is reported as error, not as a duplicate.
 
 Retries are safe by normalized phone identity, including after response loss or partial completion. The endpoint never sends messages. Updated CSV import uses the same reservation protocol; old standalone import binaries should be replaced during rollout.
+
+### Delete a family from the roster
+
+`DELETE /api/families/{id}` requires an app bearer token (assigned owner) or admin session. Returns `{"deleted":true}`. Unassigned families must first be claimed by the app user. Another user's assignment returns 403. Sending, uncertain, and unverified WhatsApp states return 409 until resolved. Concurrent changes also return 409; refresh before trying again.
+
+Deletion removes the family, RSVP/history and phone reservation atomically. Its old invitation URL returns 404. Re-importing the number from Android creates a new invitation. Pulumi adds `dynamodb:DeleteItem`; deploy the backend/infrastructure before Android 1.3.0. App deletion requires an online connection, no unsynced local events for the family, and explicit confirmation. Phone address-book entries are never deleted.

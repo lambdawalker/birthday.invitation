@@ -169,3 +169,32 @@ func (d *DynamoStore) SaveUser(c context.Context, u User, rev int) error {
 	}
 	return d.put(c, "U#"+u.ID, u, u.Revision, "revision = :rev", rev)
 }
+
+// Delete the family and its phone reservation together. Revision and ownership
+// conditions prevent a concurrent update or another family's claim being removed.
+func (d *DynamoStore) Delete(c context.Context, f Family) error {
+	phone, err := NormalizePhone(f.Phone)
+	if err != nil {
+		return err
+	}
+	_, err = d.Client.TransactWriteItems(c, &dynamodb.TransactWriteItemsInput{
+		ClientRequestToken: aws.String(RandomID()),
+		TransactItems: []types.TransactWriteItem{
+			{Delete: &types.Delete{TableName: aws.String(d.Table), Key: familyDeleteKey("F#" + f.ID), ConditionExpression: aws.String("revision = :rev"), ExpressionAttributeValues: map[string]types.AttributeValue{":rev": &types.AttributeValueMemberN{Value: strconv.Itoa(f.Revision)}}}},
+			{Delete: &types.Delete{TableName: aws.String(d.Table), Key: familyDeleteKey("P#" + HashToken(phone)), ConditionExpression: aws.String("attribute_not_exists(pk) OR familyId = :id"), ExpressionAttributeValues: map[string]types.AttributeValue{":id": &types.AttributeValueMemberS{Value: f.ID}}}},
+		},
+	})
+	var cancelled *types.TransactionCanceledException
+	if errors.As(err, &cancelled) {
+		for _, reason := range cancelled.CancellationReasons {
+			if aws.ToString(reason.Code) == "ConditionalCheckFailed" {
+				return ErrConflict
+			}
+		}
+	}
+	return err
+}
+
+func familyDeleteKey(pk string) map[string]types.AttributeValue {
+	return map[string]types.AttributeValue{"pk": &types.AttributeValueMemberS{Value: pk}}
+}

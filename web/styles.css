@@ -758,3 +758,26 @@ td small {
     scroll-behavior: auto;
   }
 }
+
+/* Persistent guest response controls, independent of scroll position. */
+[hidden] { display: none !important; }
+.invitation-page { padding-bottom: calc(var(--rsvp-height, 190px) + 24px); }
+.invitation-page .hero h1 { font-size: clamp(2.4rem, 4.5vw, 4.5rem); }
+.rsvp-dock { position: fixed; inset: auto 0 0; z-index: 50; background: var(--deep); color: var(--cream); padding: 12px 20px calc(12px + env(safe-area-inset-bottom)); box-shadow: 0 -4px 24px #0003; text-align: center; }
+.rsvp-dock p { margin: 0 0 6px; }
+.rsvp-dock #rsvp-status:empty { display: none; }
+.rsvp-dock #rsvp-status { font-size: .85rem; margin: 6px 0 0; }
+.dock-family { font-size: .85rem; }
+.dock-actions { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
+.rsvp-dock .outline { color: var(--cream); border-color: var(--gold); }
+.rsvp-dock .button { margin: 0; padding: 11px 20px; }
+#rsvp-dialog { border: 0; border-radius: 18px; padding: 24px; background: var(--cream); color: var(--ink); width: min(92vw, 520px); max-height: 85dvh; overflow: auto; }
+#rsvp-dialog::backdrop { background: #102c25b3; }
+#rsvp-dialog h2 { font-size: 2rem; }
+#rsvp-dialog .counts { margin: 20px 0; }
+button:disabled { opacity: .6; cursor: wait; }
+@media (max-width: 420px) {
+ .rsvp-dock { padding-inline: 10px; }
+ .rsvp-dock .button { padding: 10px 12px; font-size: .85rem; }
+ .dock-actions { gap: 8px; }
+}

@@ -1,75 +1,80 @@
 const token = new URLSearchParams(location.search).get("i");
-const form = document.querySelector("#rsvp-form"),
-  loading = document.querySelector("#invitation-loading"),
-  status = document.querySelector("#rsvp-status");
+const $ = (selector) => document.querySelector(selector);
+const form = $("#rsvp-form"), loading = $("#invitation-loading"), status = $("#rsvp-status"), dialog = $("#rsvp-dialog");
+let family = null, busy = false;
 async function api(path, body) {
   const r = await fetch(path, {
     method: body ? "POST" : "GET",
     headers: body ? { "Content-Type": "application/json" } : {},
     body: body ? JSON.stringify(body) : undefined,
   });
-  const data = await r.json();
-  if (!r.ok)
-    throw Error(data.error || "No pudimos conectar. Intenta de nuevo.");
+  let data;
+  try { data = await r.json(); } catch { throw Error("No pudimos conectar. Intenta de nuevo."); }
+  if (!r.ok) throw Error(data.error || "No pudimos conectar. Intenta de nuevo.");
   return data;
 }
-function counts() {
-  document.querySelector("#counts").hidden = form.elements.rsvp.value !== "yes";
+function render(editing = false) {
+  const answered = family && ["yes", "no"].includes(family.rsvp) && !editing;
+  $("#rsvp-actions").hidden = answered;
+  $("#rsvp-saved").hidden = !answered;
+  if (answered) $("#rsvp-choice").textContent = family.rsvp === "yes"
+    ? `Confirmado: ¡sí asistiremos! · ${family.adults + family.children} personas`
+    : "Respuesta: no podremos asistir";
 }
-form.addEventListener("change", counts);
-if (token && /^[a-f0-9]{32}$/.test(token)) {
-  try {
-    const f = await api(`/api/invitations/${token}`);
-    document.querySelector("#greeting").textContent =
-      `${f.name}, esta aventura también es tuya.`;
-    document.querySelector("#family-name").textContent = f.name;
-    loading.hidden = true;
-    form.hidden = false;
-    if (f.rsvp !== "pending") {
-      form.elements.rsvp.value = f.rsvp;
-      form.elements.adults.value = f.adults;
-      form.elements.children.value = f.children;
-      status.textContent =
-        f.rsvp === "yes"
-          ? "¡Gracias! Los esperamos con mucho cariño."
-          : "Gracias por avisarnos. ¡Les mandamos un abrazo!";
-    }
-    counts();
-  } catch (e) {
-    loading.textContent = e.message;
+function setBusy(value) {
+  busy = value;
+  document.querySelectorAll(".rsvp-dock button, #rsvp-dialog button").forEach(b => b.disabled = value);
+}
+async function save(rsvp) {
+  if (!family || busy) return;
+  const data = { rsvp, adults: rsvp === "yes" ? Number(form.elements.adults.value) : 0,
+    children: rsvp === "yes" ? Number(form.elements.children.value) : 0 };
+  if (![data.adults, data.children].every(n => Number.isSafeInteger(n) && n >= 0) ||
+      (rsvp === "yes" && data.adults + data.children === 0)) {
+    $("#rsvp-dialog-status").textContent = "Indica al menos una persona y usa cantidades enteras.";
+    return;
   }
-} else {
-  loading.textContent =
-    "Para confirmar, abre el enlace personal que te enviamos. Si no lo tienes, pídeselo a los anfitriones.";
-}
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const button = form.querySelector("button");
-  button.disabled = true;
+  setBusy(true);
   status.textContent = "Guardando…";
+  $("#rsvp-dialog-status").textContent = "Guardando…";
   try {
-    const rsvp = form.elements.rsvp.value;
-    const data = {
-      rsvp,
-      adults: rsvp === "yes" ? Number(form.elements.adults.value) : 0,
-      children: rsvp === "yes" ? Number(form.elements.children.value) : 0,
-    };
-    if (
-      !Number.isSafeInteger(data.adults) ||
-      !Number.isSafeInteger(data.children)
-    )
-      throw Error("Escribe cantidades enteras.");
     await api(`/api/invitations/${token}/rsvp`, data);
-    status.textContent =
-      rsvp === "yes"
-        ? "¡Confirmado! Los esperamos en la aventura."
-        : "Gracias por avisarnos. ¡Les mandamos un abrazo!";
+    family = { ...family, ...data };
+    render();
+    dialog.close();
+    status.textContent = "Tu respuesta quedó guardada. ¡Gracias!";
   } catch (err) {
     status.textContent = err.message;
-  } finally {
-    button.disabled = false;
-  }
-});
+    $("#rsvp-dialog-status").textContent = err.message;
+  } finally { setBusy(false); }
+}
+$("#rsvp-yes").onclick = () => {
+  if (!family || busy) return;
+  form.elements.adults.value = family.rsvp === "yes" ? family.adults : 1;
+  form.elements.children.value = family.rsvp === "yes" ? family.children : 0;
+  $("#rsvp-dialog-status").textContent = "";
+  dialog.showModal();
+};
+$("#rsvp-no").onclick = () => save("no");
+$("#rsvp-change").onclick = () => { render(true); status.textContent = "Elige tu nueva respuesta."; };
+$("#rsvp-cancel").onclick = () => dialog.close();
+dialog.addEventListener("cancel", event => { if (busy) event.preventDefault(); });
+form.addEventListener("submit", event => { event.preventDefault(); save("yes"); });
+if (token && /^[a-f0-9]{32}$/.test(token)) {
+  try {
+    family = await api(`/api/invitations/${token}`);
+    $("#family-name").textContent = family.name;
+    loading.hidden = true;
+    $("#rsvp-controls").hidden = false;
+    render();
+  } catch (e) { loading.textContent = e.message; }
+} else {
+  loading.textContent = "Para responder, abre el enlace personal que te enviamos. Si no lo tienes, pídeselo a los anfitriones.";
+}
+// Keep the last page content above the fixed controls at every screen size.
+new ResizeObserver(([entry]) => {
+  document.documentElement.style.setProperty("--rsvp-height", `${entry.target.offsetHeight}px`);
+}).observe($(".rsvp-dock"));
 document.querySelector("#map-house").onclick = () => {
   document.querySelector("#parking-map").src =
     "https://maps.google.com/maps?q=31.7413977,-106.4310122&z=17&output=embed";
