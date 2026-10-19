@@ -24,7 +24,7 @@ func main() {
 		}
 	}
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "No se completó el despliegue:", err)
+		fmt.Fprintln(os.Stderr, "Deployment did not complete:", err)
 		os.Exit(1)
 	}
 }
