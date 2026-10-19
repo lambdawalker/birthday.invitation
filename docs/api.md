@@ -47,3 +47,15 @@ A device must own the family for actions except claim. Admin may reconcile/relea
 Family: `{id,name,phone,email?,rsvp,adults,children,status,channel?,assignedTo?,assignedName?,attemptId?,updatedAt?,revision,history:[{id,status,channel,at,actor,detail?}]}`.
 
 SMS delivery is not exactly-once across the carrier boundary. A process crash can leave an uncertain result. Keep it visible and require human reconciliation. Device revocation prevents future backend calls; it cannot cancel an SMS already handed to Android.
+
+
+## Add families from selected contacts
+Authenticated app users, legacy devices, and administrators may call:
+`POST /api/families/import` with `{contacts:[{name,phone,email?}]}`.
+Maximum 20 entries and 32 KiB JSON per request; larger selections must be chunked. Unknown fields are rejected. The server requires international phone numbers, strips common formatting, accepts 00 prefixes, and normalizes legacy Mexican +521 numbers to +52. Local-country assumptions belong in the reviewed app UI, not the server.
+
+Response: `{results:[{index,name,phone,status,familyId?,message?}]}`, where status is `added`, `existing`, `invalid`, or `error`. A successful HTTP 200 may contain per-contact errors. `index` refers to the original request position. `familyId` may be absent for a duplicate detected in a concurrent transaction. Anonymous/revoked access returns 401; malformed or oversized batches return 400; an initial roster lookup failure returns 503 before writes begin.
+
+New rows have random 128-bit invitation IDs, pending RSVP/sending state, and `createdBy`/`createdName` metadata. New rows are assigned to the authenticated importer (administrator-created rows remain unassigned). Existing rows are never overwritten or reassigned. Family creation and a `P#<SHA256(normalized phone)>` reservation are one DynamoDB transaction with conditional puts. Transient transaction contention is reported as error, not as a duplicate.
+
+Retries are safe by normalized phone identity, including after response loss or partial completion. The endpoint never sends messages. Updated CSV import uses the same reservation protocol; old standalone import binaries should be replaced during rollout.

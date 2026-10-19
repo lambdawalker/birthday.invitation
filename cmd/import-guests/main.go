@@ -42,8 +42,26 @@ func main() {
 		log.Fatal(e)
 	}
 	st := &app.DynamoStore{Client: dynamodb.NewFromConfig(cfg), Table: table}
+	existing, e := st.List(context.Background())
+	if e != nil {
+		log.Fatal(e)
+	}
+	phones := map[string]bool{}
+	for _, f := range existing {
+		if phone, err := app.NormalizePhone(f.Phone); err == nil {
+			phones[phone] = true
+		}
+	}
 	created, skipped := 0, 0
 	for _, f := range fs {
+		phone, err := app.NormalizePhone(f.Phone)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if phones[phone] {
+			skipped++
+			continue
+		}
 		e = st.Create(context.Background(), f)
 		if errors.Is(e, app.ErrConflict) {
 			skipped++
@@ -53,6 +71,7 @@ func main() {
 			log.Fatal(e)
 		}
 		created++
+		phones[phone] = true
 	}
 	fmt.Printf("Created %d; preserved %d existing families.\n", created, skipped)
 }

@@ -106,3 +106,13 @@ If Pulumi offers to create a new project or asks for an empty directory after lo
 
 
 If an update fails with CloudFront `NoSuchCachePolicy`, update to the corrected infrastructure code and rerun the launcher with the same AWS account, state bucket, stack, and encryption passphrase. The API behavior uses AWS's managed CachingDisabled policy (`4135ea2d-6df8-44a3-9df3-4b5a84be39ad`). Pulumi retains resources successfully created before a failure and reconciles them on the next update; do not delete the stack or recreate the bucket to retry.
+
+
+## Add families from Android contacts
+After deploying this backend update, install Android 1.2.0 (version code 3). In the app choose **Add from phone contacts**, allow Contacts access, search and select up to 100 people, then review names and phone numbers before choosing **Add to roster**. Multiple-number contacts require choosing one number; names can be edited to identify the head of family. An optional email can be entered manually.
+
+Only selected entries are uploaded, in requests of up to 20 contacts. New families receive private random invitation IDs, are assigned to the importing user, and appear in both reports with an **Added from phone contacts** history entry. Importing does not send invitations. Existing phone numbers are skipped without changing ownership, RSVP, or sending history. Phone identity is shared across all app users, including formatted and legacy Mexican +521 numbers.
+
+New creates atomically store a family and a phone reservation in the existing DynamoDB table. This uses the existing PutItem IAM permission; no new table or credentials are needed. The import route scans legacy families before creating new rows, so existing CSV entries are preserved without a migration. The updated CSV importer also checks existing normalized numbers and uses the same atomic reservation. Use the updated importer for subsequent CSV imports rather than an old compiled copy.
+
+Interrupted requests can partially complete. Retry the selection safely: already-added numbers are skipped and unconfirmed contacts can be retried. Ambiguous/local numbers are normalized in the app using the displayed country code (Mexico +52 by default); other countries should use explicit international numbers. Extensions and alphabetic dialing are rejected. Distinct families sharing one phone number are treated as a single roster entry.
