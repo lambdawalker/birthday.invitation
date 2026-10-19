@@ -7,6 +7,7 @@ import (
 )
 
 type Store interface {
+	Delete(context.Context, Family) error
 	GetUser(context.Context, string) (User, error)
 	Users(context.Context) ([]User, error)
 	SaveUser(context.Context, User, int) error
@@ -136,5 +137,19 @@ func (m *MemoryStore) SaveUser(_ context.Context, u User, rev int) error {
 		return ErrConflict
 	}
 	m.users[u.ID] = u
+	return nil
+}
+
+func (m *MemoryStore) Delete(_ context.Context, f Family) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	old, ok := m.families[f.ID]
+	if !ok {
+		return ErrNotFound
+	}
+	if old.Revision != f.Revision {
+		return ErrConflict
+	}
+	delete(m.families, f.ID)
 	return nil
 }

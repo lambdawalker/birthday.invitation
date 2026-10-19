@@ -13,30 +13,18 @@
     <link rel="stylesheet" href="styles.css" />
     <script type="module" src="app.js"></script>
   </head>
-  <body>
-    <header class="topbar">
-      <a class="brand" href="#">A <span>✦</span> A</a
-      ><span>UNA PEQUEÑA GRAN AVENTURA</span
-      ><a href="#rsvp">Confirmar asistencia ↗</a>
-    </header>
+  <body class="invitation-page">
     <main>
       <section class="hero">
         <div class="hero-copy">
           <p class="eyebrow">¡LLAMADO A TODOS LOS VIKINGOS!</p>
-          <h1>Dos años de<br /><em>magia.</em><br />Una gran aventura.</h1>
-          <p class="intro">
-            Abi cumple <strong>2 años</strong> y el bosque se prepara para
-            celebrar. ¡Ven con tu familia a entrenar dragones y crear recuerdos!
-          </p>
+          <h1>Acompáñanos a celebrar los <em>dos años de Abi.</em> Trae a tu familia.</h1>
           <div class="date-line">
             <strong>24</strong><span>OCTUBRE<br />SÁBADO · 2026</span
             ><span class="date-time"
               >4:00 p. m.<br /><small>Ciudad Juárez</small></span
             >
           </div>
-          <a class="button gold" href="#rsvp"
-            >Nos vemos en la aventura <span>↗</span></a
-          >
         </div>
         <div class="portrait">
           <img
@@ -61,33 +49,6 @@
           abrigado!
         </p>
       </div>
-      <section class="welcome section">
-        <p class="eyebrow">UN DÍA PARA COMPARTIR</p>
-        <h2 id="greeting">Tu familia es parte<br />de esta historia.</h2>
-        <p>
-          Entre árboles, risas y pequeños dragones,<br />lo más bonito será
-          celebrar contigo.
-        </p>
-        <div class="village" aria-hidden="true">
-          <svg viewBox="0 0 600 130">
-            <g fill="#b8bd9d">
-              <path
-                d="M0 120 35 30 70 120M70 120 110 5 150 120M440 120 475 30 510 120M500 120 545 0 590 120"
-              />
-            </g>
-            <g fill="#476052">
-              <path d="m150 65 70-55 70 55v55H150z" />
-              <path d="m330 75 55-45 55 45v45H330z" />
-            </g>
-            <g fill="none" stroke="#b79059" stroke-width="7">
-              <path d="m130 68 90-68 90 68M315 77l70-57 70 57" />
-            </g>
-            <g fill="#e3c08b">
-              <path d="M205 85q15-24 30 0v35h-30zM375 95q10-20 20 0v25h-20z" />
-            </g>
-          </svg>
-        </div>
-      </section>
       <section class="details section">
         <div>
           <p class="eyebrow">EL PUNTO DE ENCUENTRO</p>
@@ -116,68 +77,6 @@
             bonito.
           </p>
           <p class="muted">También puedes traer tu propia cerveza.</p>
-        </div>
-      </section>
-      <section class="rsvp section" id="rsvp">
-        <div>
-          <p class="eyebrow">GUARDA TU LUGAR EN LA AVENTURA</p>
-          <h2>¿Nos acompañan?</h2>
-          <p>
-            Cuéntanos cuántos vendrán para preparar todo con cariño. No hay
-            límite de integrantes por familia.
-          </p>
-          <img
-            class="rsvp-abi"
-            src="assets/abi-standing.webp"
-            alt="Abi lista para la fiesta"
-            loading="lazy"
-            width="320"
-            height="690"
-          />
-        </div>
-        <div class="rsvp-card">
-          <div id="invitation-loading" role="status">
-            Buscando tu invitación…
-          </div>
-          <form id="rsvp-form" hidden>
-            <p id="family-name" class="family-name"></p>
-            <fieldset>
-              <legend>¿Tu familia asistirá?</legend>
-              <label class="choice"
-                ><input type="radio" name="rsvp" value="yes" required /> ¡Sí,
-                asistiremos!</label
-              ><label class="choice"
-                ><input type="radio" name="rsvp" value="no" required /> No
-                podremos asistir</label
-              >
-            </fieldset>
-            <div id="counts" class="counts">
-              <label
-                >Adultos<input
-                  name="adults"
-                  type="number"
-                  min="0"
-                  step="1"
-                  value="1"
-                  inputmode="numeric" /></label
-              ><label
-                >Niños<input
-                  name="children"
-                  type="number"
-                  min="0"
-                  step="1"
-                  value="0"
-                  inputmode="numeric"
-              /></label>
-            </div>
-            <button class="button gold" type="submit">
-              Guardar respuesta <span>↗</span>
-            </button>
-            <p class="muted">
-              Puedes volver a este enlace para cambiar tu respuesta.
-            </p>
-          </form>
-          <p id="rsvp-status" role="status" aria-live="polite"></p>
         </div>
       </section>
       <section class="gifts section">
@@ -243,6 +142,36 @@
         ></iframe>
       </section>
     </main>
+    <aside class="rsvp-dock" aria-label="Respuesta a la invitación">
+      <p id="invitation-loading" role="status">Buscando tu invitación…</p>
+      <div id="rsvp-controls" hidden>
+        <p id="family-name" class="dock-family"></p>
+        <div id="rsvp-actions" class="dock-actions">
+          <button id="rsvp-yes" class="button gold" type="button">¡Sí, asistiremos!</button>
+          <button id="rsvp-no" class="button outline" type="button">No podremos asistir</button>
+        </div>
+        <div id="rsvp-saved" class="dock-actions" hidden>
+          <strong id="rsvp-choice"></strong>
+          <button id="rsvp-change" class="button outline" type="button">Cambiar respuesta</button>
+        </div>
+      </div>
+      <p id="rsvp-status" role="status" aria-live="polite"></p>
+    </aside>
+    <dialog id="rsvp-dialog" aria-labelledby="rsvp-title">
+      <form id="rsvp-form">
+        <h2 id="rsvp-title">¡Los esperamos!</h2>
+        <p>¿Cuántos vendrán? Toda tu familia es bienvenida.</p>
+        <div class="counts">
+          <label>Adultos<input name="adults" type="number" min="0" step="1" value="1" required inputmode="numeric" /></label>
+          <label>Niños<input name="children" type="number" min="0" step="1" value="0" required inputmode="numeric" /></label>
+        </div>
+        <p id="rsvp-dialog-status" role="status" aria-live="polite"></p>
+        <div class="dock-actions">
+          <button class="button gold" type="submit">Confirmar asistencia</button>
+          <button id="rsvp-cancel" class="button outline" type="button">Cancelar</button>
+        </div>
+      </form>
+    </dialog>
     <footer>
       <span class="footer-name">Abi</span>
       <p>Dos años llenando nuestro mundo de magia.</p>

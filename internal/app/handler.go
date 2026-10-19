@@ -34,6 +34,7 @@ func NewServer(st Store, key, origin string) *Server {
 	s.mux.HandleFunc("GET /api/admin/families", s.adminList)
 	s.mux.HandleFunc("GET /api/families", s.list)
 	s.mux.HandleFunc("POST /api/families/import", s.importContacts)
+	s.mux.HandleFunc("DELETE /api/families/{id}", s.deleteFamily)
 	s.mux.HandleFunc("POST /api/families/{id}/actions", s.action)
 	s.mux.HandleFunc("GET /api/admin/devices", s.devices)
 	s.mux.HandleFunc("POST /api/admin/devices", s.devices)

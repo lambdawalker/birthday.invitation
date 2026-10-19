@@ -116,3 +116,9 @@ Only selected entries are uploaded, in requests of up to 20 contacts. New famili
 New creates atomically store a family and a phone reservation in the existing DynamoDB table. This uses the existing PutItem IAM permission; no new table or credentials are needed. The import route scans legacy families before creating new rows, so existing CSV entries are preserved without a migration. The updated CSV importer also checks existing normalized numbers and uses the same atomic reservation. Use the updated importer for subsequent CSV imports rather than an old compiled copy.
 
 Interrupted requests can partially complete. Retry the selection safely: already-added numbers are skipped and unconfirmed contacts can be retried. Ambiguous/local numbers are normalized in the app using the displayed country code (Mexico +52 by default); other countries should use explicit international numbers. Extensions and alphabetic dialing are rejected. Distinct families sharing one phone number are treated as a single roster entry.
+
+### Roster deletion and persistent RSVP
+
+Android 1.3.0 can delete assigned families after confirmation. Resolve in-flight or uncertain sends first. Deletion invalidates the invitation and removes RSVP/sending history; the phone contact is untouched and may be re-imported with a new invitation ID. Deploy this backend first, including the new DynamoDB DeleteItem permission.
+
+The invitation uses a fixed bottom response bar: accept opens a family-size dialog, decline saves immediately, and a saved response replaces both choices until Change response is selected. The selected response is also loaded on return visits.
