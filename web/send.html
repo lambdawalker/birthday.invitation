@@ -53,6 +53,17 @@
           ><button id="refresh" class="button outline">Actualizar</button
           ><button id="export" class="button outline">Exportar CSV</button>
         </div>
+        <details class="device-panel" id="create-family-panel">
+          <summary>Add guest family</summary>
+          <p>Each guest represents a family. New families are unassigned and ready to invite.</p>
+          <form id="create-family-form" class="toolbar">
+            <label>Head of family<input id="family-name" maxlength="120" required autocomplete="name" /></label>
+            <label>Phone with country code<input id="family-phone" type="tel" placeholder="+52 or +1…" required autocomplete="tel" /></label>
+            <label>Email (optional)<input id="family-email" type="email" maxlength="254" autocomplete="email" /></label>
+            <button class="button gold">Create family</button>
+          </form>
+          <p id="create-family-status" role="status" aria-live="polite"></p>
+        </details>
         <div class="table-wrap">
           <table>
             <thead id="head"></thead>
