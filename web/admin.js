@@ -120,7 +120,7 @@ async function load() {
   const states = {pin_ready: "PIN ready", signed_in: "Signed in", needs_pin: "Needs a new PIN", revoked: "Access revoked"};
   $("#users").innerHTML = users.map(u =>
     `<div class="device-row"><span><strong>${esc(u.username)}</strong> · ${esc(states[u.status] || u.status)}</span><button data-pin="${esc(u.id)}" class="button outline">Generate new PIN</button>${u.status !== "revoked" ? `<button data-revoke-user="${esc(u.id)}" class="button outline">Revoke access</button>` : ""}</div>`
-  ).join("") || '<p class="muted">No app users yet.</p>';
+  ).join("") || '<p class="muted">No sender users yet.</p>';
   const devices = await api("/admin/devices");
   $("#devices").innerHTML =
     devices
@@ -213,7 +213,7 @@ $("#rows").onclick = async (e) => {
 function showPIN(d) {
   $("#pairing").hidden = false;
   $("#pairing").textContent =
-    `Username: ${d.user.username}\nSingle-use PIN: ${d.pin}\nExpires: ${new Date(d.user.pinExpires * 1000).toLocaleString()}\nServer: ${d.baseUrl}\nShare this PIN privately. It is shown only once.`;
+    `Username: ${d.user.username}\nSingle-use PIN: ${d.pin}\nExpires: ${new Date(d.user.pinExpires * 1000).toLocaleString()}\nWeb sender: ${d.baseUrl}/sender.html\nServer: ${d.baseUrl}\nShare this PIN privately. It is shown only once.`;
 }
 $("#device-form").onsubmit = async (e) => {
   e.preventDefault();
@@ -234,7 +234,7 @@ $("#users").onclick = async (e) => {
   if (!b) return;
   const reset = !!b.dataset.pin;
   if (!confirm(reset
-    ? "Generate a new PIN? This replaces any previous PIN and signs out the current app session. Family assignments are kept. Stop any active sending first."
+    ? "Generate a new PIN? This replaces any previous PIN and signs out the current sender session. Family assignments are kept. Stop any active sending first."
     : "Revoke this user's access? Family assignments and sending history are kept.")) return;
   b.disabled = true;
   $("#pairing").hidden = true;
