@@ -1,32 +1,28 @@
-name: Validate platform
+name: Validate Go platform
 on: [push, pull_request]
 permissions:
   contents: read
 jobs:
-  backend:
-    runs-on: ubuntu-latest
+  validate:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
-      - run: go test -race ./... && go vet ./...
-        working-directory: backend
-      - run: python scripts/build.py
-      - uses: actions/upload-artifact@v4
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - run: go test ./...
+      - run: go vet ./...
+      - run: go run ./cmd/build
+      - run: go build -o build/deploy-check ./cmd/deploy
+      - run: go build -o build/infra-check ./infra
+      - if: runner.os == 'Linux'
+        run: go test -race ./internal/...
+      - if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
         with:
           name: lambda-arm64
           path: build/lambda.zip
-  infrastructure:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: infra/package-lock.json
-      - run: npm ci && npm run check
-        working-directory: infra
-      - run: python -m unittest discover -s scripts -p 'test_*.py'
