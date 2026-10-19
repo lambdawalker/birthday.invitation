@@ -21,6 +21,12 @@ func NewServer(st Store, key, origin string) *Server {
 		panic("ADMIN_KEY must be at least 32 characters")
 	}
 	s := &Server{store: st, key: key, origin: strings.TrimRight(origin, "/"), mux: http.NewServeMux()}
+	s.mux.HandleFunc("GET /api/admin/users", s.users)
+	s.mux.HandleFunc("POST /api/admin/users", s.users)
+	s.mux.HandleFunc("POST /api/admin/users/{id}/pin", s.userPIN)
+	s.mux.HandleFunc("DELETE /api/admin/users/{id}", s.revokeUser)
+	s.mux.HandleFunc("POST /api/user/login", s.userLogin)
+	s.mux.HandleFunc("POST /api/user/logout", s.userLogout)
 	s.mux.HandleFunc("POST /api/login", s.login)
 	s.mux.HandleFunc("POST /api/logout", s.logout)
 	s.mux.HandleFunc("GET /api/invitations/{id}", s.invitation)

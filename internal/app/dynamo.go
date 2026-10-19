@@ -115,3 +115,29 @@ func (d *DynamoStore) Devices(c context.Context) ([]Device, error) {
 	}
 	return ds, nil
 }
+
+func (d *DynamoStore) GetUser(c context.Context, id string) (u User, err error) {
+	err = d.get(c, "U#"+id, &u)
+	return
+}
+func (d *DynamoStore) Users(c context.Context) ([]User, error) {
+	rows, err := d.scan(c, "U#")
+	if err != nil {
+		return nil, err
+	}
+	out := []User{}
+	for _, row := range rows {
+		var u User
+		if err = json.Unmarshal([]byte(row), &u); err != nil {
+			return nil, err
+		}
+		out = append(out, u)
+	}
+	return out, nil
+}
+func (d *DynamoStore) SaveUser(c context.Context, u User, rev int) error {
+	if rev == 0 {
+		return d.put(c, "U#"+u.ID, u, u.Revision, "attribute_not_exists(pk)", -1)
+	}
+	return d.put(c, "U#"+u.ID, u, u.Revision, "revision = :rev", rev)
+}

@@ -7,7 +7,7 @@ Companion: [birthday.invitation.android](https://github.com/lambdawalker/birthda
 ## Screens
 - `/`: invitation. Family links use `/?i=...`; an unpersonalized visit shows event information but cannot RSVP.
 - `/admin.html`: attendance and headcounts; export CSV.
-- `/send.html`: sending progress, assignments, history, manual SMS/WhatsApp tools and revocable device credentials.
+- `/send.html`: sending progress, assignments, history, manual SMS/WhatsApp tools and app users with single-use sign-in PINs.
 
 Event: October 24, 2026, **4 p.m. America/Ciudad_Juarez**. Includes the weather-related change from 5 p.m., gift preferences, map and parking directions. Neighborhood name omitted until confirmed. Parking tab searches Calle Ingeniería; it does not invent an exact parking-lot coordinate. Check the map with the host before sharing.
 
@@ -57,7 +57,13 @@ go run ./cmd/import-guests -file my-guests.csv -apply   # create missing familie
 Existing records are never overwritten; RSVPs, sending and assignments are preserved. Repeating an import with the same namespace/phone is safe. Changing a phone changes derived ID unless an explicit original `id` is retained. The CLI does not update existing contacts; correct/import before sending or use a reviewed database maintenance operation.
 
 ## Connect Android
-In `/send.html`, create a device credential. Copy the server URL and credential into the app. Assign families before sending; assignments are shown in both reports. Revoking a device blocks new API calls but does not undo SMS already dispatched. Keep the app open for the short paced batch. Confirm real-phone permissions/SIM/carrier behavior with one recipient before the remaining 49.
+In `/send.html` or `/admin.html`, use **App users** to create a username (3–40 letters, numbers, dots, underscores or hyphens). Share the username and generated eight-digit PIN privately. The app defaults to `https://xitlaliabigail.com`; the user enters their username and PIN, with no credential copying. PINs expire after 15 minutes, allow at most five incorrect attempts, and work once. The app stores the resulting session using Android Keystore.
+
+Use **Generate new PIN** beside an existing username after logout, reinstall, expiry, or lockout. This immediately invalidates the old PIN and app session while preserving family assignments and sending history. **Revoke access** disables both the session and outstanding PIN; generating another PIN re-enables the user. One active app session per username is supported. Stop sending on the old phone before replacing its session. Existing legacy device credentials still work and remain revocable under **Previously connected devices**.
+
+Deploy the backend/web changes first with the usual launcher, then install Android version 1.1.0. No table recreation or new AWS permissions are needed: user records use the existing DynamoDB table with conditional writes. Existing legacy assignments stay with their old device; release them in the web report before claiming them under a new username. For users created with PINs, re-login preserves their assignments automatically.
+
+Assign families before sending; assignments appear in both reports. Keep the app open for the paced batch and test one recipient first. Replacing access cannot undo an SMS already handed to Android. If a sign-in response is lost, generate another PIN; it may already have been consumed.
 
 ## Go commands and verification
 
