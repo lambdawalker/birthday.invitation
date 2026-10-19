@@ -239,6 +239,13 @@ func Deploy(root string) (err error) {
 	}
 	w.step(4, "Domain and secrets")
 	domain := w.ask("Domain", defaults.Domain)
+	contactPhone := defaults.ContactPhone
+	if contactPhone == "" {
+		contactPhone = w.ask("Public contact phone for questions (include +52 or +1)", "")
+	}
+	var phoneErr error
+	contactPhone, phoneErr = NormalizeContactPhone(contactPhone)
+	stop(phoneErr)
 	zone := w.ask("Cloudflare Zone ID (auto detects the domain)", envDefault("CLOUDFLARE_ZONE_ID", defaults.CloudflareZoneID))
 
 	stop(os.Setenv("CLOUDFLARE_API_TOKEN", w.secret("CLOUDFLARE_API_TOKEN", "Cloudflare token (DNS Edit and Zone Read, scoped to this zone)")))
@@ -249,7 +256,7 @@ func Deploy(root string) (err error) {
 		fmt.Fprintln(w.output, "Cloudflare Zone ID:", zone)
 	}
 
-	for _, pair := range [][2]string{{"aws:region", region}, {"domain", domain}, {"cloudflareZoneId", zone}} {
+	for _, pair := range [][2]string{{"aws:region", region}, {"domain", domain}, {"cloudflareZoneId", zone}, {"contactPhone", contactPhone}} {
 		w.must("", false, "pulumi", "config", "set", pair[0], pair[1])
 	}
 	var configs map[string]json.RawMessage

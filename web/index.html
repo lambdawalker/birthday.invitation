@@ -12,13 +12,14 @@
     <title>Abi cumple 2 · Una aventura vikinga</title>
     <link rel="stylesheet" href="styles.css" />
     <script type="module" src="app.js"></script>
+    <script type="module" src="invitation-experience.js"></script>
   </head>
   <body class="invitation-page">
     <main>
       <section class="hero">
         <div class="hero-copy">
           <p class="eyebrow">¡LLAMADO A TODOS LOS VIKINGOS!</p>
-          <h1>Acompáñanos a celebrar los <em>dos años de Abi.</em> Trae a tu familia.</h1>
+          <h1>Celebremos los <em>dos años de Abi.</em></h1>
           <div class="date-line">
             <strong>24</strong><span>OCTUBRE<br />SÁBADO · 2026</span
             ><span class="date-time"
@@ -26,6 +27,8 @@
             >
           </div>
           <a class="hero-address" href="https://www.google.com/maps/place/C.+Arquitectura+419,+32320+Ju%C3%A1rez,+Chih./@31.7414022,-106.4335871,17z/data=!3m1!4b1!4m6!3m5!1s0x86e75be5320a9383:0xc2213e7a3f8c92ae!8m2!3d31.7413977!4d-106.4310122!16s%2Fg%2F11m_f5tgg3?entry=ttu&amp;g_ep=EgoyMDI2MTAxNC4wIKXMDSoASAFQAw%3D%3D" target="_blank" rel="noopener noreferrer">Calle Arquitectura #419 ↗</a>
+          <p class="contact-line" data-contact hidden>Dudas y aclaraciones: <a data-contact-link></a></p>
+          <a class="gift-link" href="#gifts"><img src="assets/viking-gift.webp" width="80" height="80" alt="" />Ideas para regalos ↓</a>
         </div>
         <div class="portrait">
           <img
@@ -51,7 +54,7 @@
         </p>
       </div>
       <p class="hospitality">También puedes traer tu propia cerveza.</p>
-      <section class="gifts section">
+      <section class="gifts section" id="gifts">
         <p class="eyebrow">PEQUEÑAS PISTAS, MUCHO CARIÑO</p>
         <h2>Lo más lindo es que vengas.</h2>
         <p>Si quieres traer un detalle, aquí van algunas ideas.</p>
@@ -81,37 +84,6 @@
             </p>
           </article>
         </div>
-      </section>
-      <section class="parking section">
-        <div>
-          <p class="eyebrow">LLEGA CON CALMA</p>
-          <h2>Un lugar para<br />tu nave vikinga.</h2>
-          <p>
-            Puedes estacionarte <strong>frente a la casa</strong>. También hay
-            <strong
-              >más espacio en la calle Ingeniería, a un costado del
-              parque</strong
-            >.
-          </p>
-          <div class="map-tabs">
-            <button id="map-house" class="button outline" type="button">
-              ⌂ Ver la casa</button
-            ><button id="map-parking" class="button outline" type="button">
-              P Calle Ingeniería
-            </button>
-          </div>
-          <p class="muted" id="map-caption">
-            Usa los botones para ver la casa o la zona de estacionamiento.
-          </p>
-        </div>
-        <iframe
-          id="parking-map"
-          title="Mapa de la casa y calles cercanas"
-          src="https://maps.google.com/maps?q=31.7413977,-106.4310122&z=17&output=embed"
-          loading="lazy"
-          referrerpolicy="no-referrer"
-          allowfullscreen
-        ></iframe>
       </section>
     </main>
     <aside class="rsvp-dock" aria-label="Respuesta a la invitación">
@@ -145,6 +117,9 @@
     </dialog>
     <footer>
       <span class="footer-name">Abi</span>
+      <p>Dos años llenando nuestro mundo de magia.</p>
+      <span>24 · OCTUBRE · 2026</span>
+      <p class="contact-line" data-contact hidden>Dudas y aclaraciones: <a data-contact-link></a></p>
     </footer>
   </body>
 </html>

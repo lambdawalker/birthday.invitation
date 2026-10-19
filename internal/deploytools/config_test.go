@@ -45,3 +45,21 @@ func TestCheckedInDeploymentDefaults(t *testing.T) {
 		t.Fatalf("%+v", cfg)
 	}
 }
+
+func TestContactPhoneConfig(t *testing.T) {
+	root := t.TempDir()
+	for _, input := range []string{"+52 (656) 123-4567", "+1 915 555 1234"} {
+		if err := os.WriteFile(filepath.Join(root, "deploy.defaults.yaml"), []byte("contact_phone: '"+input+"'\n"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		cfg, err := loadDefaults(root)
+		if err != nil || cfg.ContactPhone == "" {
+			t.Fatal(cfg, err)
+		}
+	}
+	for _, input := range []string{"6561234567", "+52abc6561234567", "<script>", ""} {
+		if _, err := NormalizeContactPhone(input); err == nil {
+			t.Fatal("accepted invalid phone", input)
+		}
+	}
+}
