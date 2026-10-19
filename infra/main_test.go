@@ -59,11 +59,14 @@ func TestInfrastructureProtectionAndRouting(t *testing.T) {
 	t.Chdir(filepath.Join(root, "infra"))
 	mocks := &graphMocks{resources: map[string]pulumi.MockResourceArgs{}}
 	err = pulumi.RunErr(define, pulumi.WithMocks("birthday-invitation", "test", mocks), func(info *pulumi.RunInfo) {
-		info.Config = map[string]string{"birthday-invitation:cloudflareZoneId": "test-zone", "birthday-invitation:adminKey": "test-secret-which-is-at-least-32-characters"}
+		info.Config = map[string]string{"birthday-invitation:cloudflareZoneId": "test-zone", "birthday-invitation:contactPhone": "+526561234567", "birthday-invitation:adminKey": "test-secret-which-is-at-least-32-characters"}
 		info.ConfigSecretKeys = []string{"birthday-invitation:adminKey"}
 	})
 	if err != nil {
 		t.Fatal(err)
+	}
+	if got := mocks.resources["file-site-config-json"].Inputs["content"].StringValue(); got != `{"contactPhone":"+526561234567"}` {
+		t.Fatal(got)
 	}
 	table := mocks.resources["families"]
 	if !table.Inputs["deletionProtectionEnabled"].BoolValue() || table.RegisterRPC == nil || !table.RegisterRPC.GetProtect() {

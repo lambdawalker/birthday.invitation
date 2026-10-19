@@ -74,15 +74,3 @@ if (token && /^[a-f0-9]{32}$/.test(token)) {
 new ResizeObserver(([entry]) => {
   document.documentElement.style.setProperty("--rsvp-height", `${entry.target.offsetHeight}px`);
 }).observe($(".rsvp-dock"));
-document.querySelector("#map-house").onclick = () => {
-  document.querySelector("#parking-map").src =
-    "https://maps.google.com/maps?q=31.7413977,-106.4310122&z=17&output=embed";
-  document.querySelector("#map-caption").textContent =
-    "Vista de la casa.";
-};
-document.querySelector("#map-parking").onclick = () => {
-  document.querySelector("#parking-map").src =
-    "https://maps.google.com/maps?q=Calle%20Ingenier%C3%ADa%2C%20Universidad%2C%20Ciudad%20Ju%C3%A1rez%2C%20Chihuahua&z=17&output=embed";
-  document.querySelector("#map-caption").textContent =
-    "Más espacio sobre Calle Ingeniería, a un costado del parque. El mapa busca la calle; no indica cajones reservados.";
-};

@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/lambdawalker/birthday.invitation/internal/deploytools"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 )
@@ -91,6 +92,14 @@ func define(ctx *pulumi.Context) (err error) {
 	if domain == "" {
 		domain = "xitlaliabigail.com"
 	}
+	contactPhone := cfg.Get("contactPhone")
+	if contactPhone != "" {
+		var e error
+		contactPhone, e = deploytools.NormalizeContactPhone(contactPhone)
+		if e != nil {
+			return e
+		}
+	}
 	zone := cfg.Require("cloudflareZoneId")
 	admin := cfg.RequireSecret("adminKey")
 	east := &provider{}
@@ -148,6 +157,9 @@ func define(ctx *pulumi.Context) (err error) {
 			return e
 		}
 		key = filepath.ToSlash(key)
+		if key == "site-config.json" {
+			return nil
+		}
 		contentType := mime[filepath.Ext(key)]
 		if contentType == "" {
 			contentType = "application/octet-stream"
@@ -158,6 +170,11 @@ func define(ctx *pulumi.Context) (err error) {
 	if err != nil {
 		return err
 	}
+	publicConfig, e := json.Marshal(map[string]string{"contactPhone": contactPhone})
+	if e != nil {
+		return e
+	}
+	add(ctx, "aws:s3/bucketObjectv2:BucketObjectv2", "file-site-config-json", M{"bucket": bucket.ID(), "key": "site-config.json", "content": string(publicConfig), "contentType": "application/json; charset=utf-8", "cacheControl": "public, max-age=60"})
 	ctx.Export("siteUrl", pulumi.String("https://"+domain))
 	ctx.Export("tableName", table.Name)
 	ctx.Export("distributionId", distribution.ID())

@@ -122,3 +122,19 @@ Interrupted requests can partially complete. Retry the selection safely: already
 Android 1.3.0 can delete assigned families after confirmation. Resolve in-flight or uncertain sends first. Deletion invalidates the invitation and removes RSVP/sending history; the phone contact is untouched and may be re-imported with a new invitation ID. Deploy this backend first, including the new DynamoDB DeleteItem permission.
 
 The invitation uses a fixed bottom response bar: accept opens a family-size dialog, decline saves immediately, and a saved response replaces both choices until Change response is selected. The selected response is also loaded on return visits.
+
+### Public contact phone and invitation motion
+
+Set `contact_phone: "+526561234567"` (replace with your real number) in
+`deploy.defaults.yaml`. If it is missing or blank, the deployment wizard asks for
+it; a configured value skips that prompt. Include the international +52 or +1
+prefix. This number is public and appears as a calling link under the address
+and in the footer, labelled “Dudas y aclaraciones”. The wizard stores it as the
+Pulumi `contactPhone` setting; infrastructure publishes only that public field in
+`site-config.json`. Direct Pulumi deployments can set `contactPhone` explicitly.
+The local demo has no contact number until configured.
+
+The invitation scrolls at 12 pixels/second after a short reading pause. Any touch,
+pointer press, wheel input, keyboard input or manual scroll stops it for that page
+visit. It also stops when the page is hidden and respects reduced-motion settings.
+The gift image links to the gift section; parking content has been removed.

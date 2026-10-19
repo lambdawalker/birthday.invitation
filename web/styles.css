@@ -789,3 +789,12 @@ button:disabled { opacity: .6; cursor: wait; }
 @media (max-width: 760px) {
  .invitation-page .hero { padding-top: 22.5px; }
 }
+
+.invitation-page .hero h1 { letter-spacing: .015em; }
+.hospitality { font-size: clamp(1.25rem, 2.3vw, 1.7rem); font-weight: 600; padding: 28px 24px 0; }
+.contact-line { font-size: .95rem; margin: 12px 0; }
+.contact-line a { color: var(--gold); text-underline-offset: 4px; white-space: nowrap; }
+.gift-link { display: inline-flex; align-items: center; gap: 12px; margin-top: 14px; color: var(--gold); text-underline-offset: 5px; font-size: 1.05rem; }
+.gift-link img { width: 80px; height: 80px; object-fit: contain; }
+#gifts { scroll-margin-top: 20px; }
+footer .contact-line { margin-top: 24px; }

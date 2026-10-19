@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -13,6 +14,7 @@ import (
 
 // DeploymentDefaults contains only non-secret prompt defaults.
 type DeploymentDefaults struct {
+	ContactPhone      string `yaml:"contact_phone"`
 	AWSProfile        string `yaml:"aws_profile"`
 	AWSRegion         string `yaml:"aws_region"`
 	StateBucket       string `yaml:"state_bucket"`
@@ -58,7 +60,21 @@ func loadDefaults(root string) (DeploymentDefaults, error) {
 	if cfg.Deploy != "DEPLOY" && cfg.Deploy != "CANCEL" {
 		return cfg, errors.New("deploy must be DEPLOY or CANCEL")
 	}
+	if cfg.ContactPhone != "" {
+		cfg.ContactPhone, err = NormalizeContactPhone(cfg.ContactPhone)
+		if err != nil {
+			return cfg, err
+		}
+	}
 	return cfg, nil
+}
+
+func NormalizeContactPhone(value string) (string, error) {
+	value = strings.NewReplacer(" ", "", "-", "", "(", "", ")", "", ".", "").Replace(strings.TrimSpace(value))
+	if !regexp.MustCompile(`^\+[1-9][0-9]{7,14}$`).MatchString(value) {
+		return "", errors.New("contact_phone must include + and the country code, for example +52 followed by 10 digits or +1 followed by 10 digits")
+	}
+	return value, nil
 }
 
 func (c DeploymentDefaults) bucket(account, region string) string {

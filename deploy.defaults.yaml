@@ -11,3 +11,6 @@ stack: production
 domain: xitlaliabigail.com
 cloudflare_zone_id: auto # Look up the exact domain, or set a Zone ID.
 deploy: DEPLOY # DEPLOY or CANCEL; the preview is always shown first.
+
+# Public number shown on the invitation. Include +52 or +1; blank prompts at deploy.
+contact_phone: ""
