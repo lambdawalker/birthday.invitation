@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow" />
+  <meta name="referrer" content="no-referrer" />
+  <title>Invitation sender · Abi</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="sender.css" />
+  <script type="module" src="sender.js"></script>
+</head>
+<body class="sender-page">
+<main class="sender-shell">
+  <header class="sender-header"><a class="brand" href="/">Abi ✦ 2</a><span>Invitation sender</span><button id="signout" class="button outline" hidden>Sign out</button></header>
+  <p id="notice" class="sender-notice" role="status" aria-live="polite"></p>
+  <section id="signin" class="sender-panel">
+    <p class="eyebrow">WELCOME TO THE VILLAGE</p><h1>Let’s invite the families.</h1>
+    <p>Ask the administrator for your username and an eight-digit, single-use PIN.</p>
+    <form id="signin-form">
+      <label>Username<input id="username" autocomplete="username" autocapitalize="none" spellcheck="false" required /></label>
+      <label>Single-use PIN<input id="pin" type="password" inputmode="numeric" pattern="[0-9]{8}" minlength="8" maxlength="8" autocomplete="one-time-code" required /></label>
+      <label class="remember"><input id="remember" type="checkbox" /> Keep me signed in on this personal device</label>
+      <button class="button gold" type="submit">Sign in</button>
+    </form>
+    <p class="muted">PINs expire after 15 minutes. Without “Keep me signed in”, closing this tab ends browser access. After signing out or losing browser access, ask for a new PIN.</p>
+  </section>
+  <section id="workspace" hidden>
+    <div class="sender-heading"><div><p class="eyebrow" id="signed-in-as"></p><h1>Your family roster</h1></div><button id="refresh" class="button outline">Refresh</button></div>
+    <p>Choose contacts, review their details, then send each invitation through your messaging app.</p>
+    <div class="sender-actions"><button id="pick" class="button gold">Choose phone contacts</button><button id="manual" class="button outline">Add family manually</button></div>
+    <p id="contacts-help" class="muted"></p>
+    <div id="summary" class="sender-summary"></div>
+    <div class="sender-toolbar"><input id="search" type="search" placeholder="Search name or phone" aria-label="Search roster" /><select id="filter" aria-label="Filter roster"><option value="mine">Assigned to me</option><option value="unassigned">Unassigned</option><option value="all">All families</option><option value="review">My messages to verify</option></select></div>
+    <div id="roster" class="sender-roster"></div>
+  </section>
+  <section id="review" class="sender-panel" hidden>
+    <p class="eyebrow">REVIEW BEFORE IMPORTING</p><h1>Add families</h1>
+    <p>Each person represents one family. Only reviewed contacts are uploaded. Local numbers need a country code; existing international codes are preserved.</p>
+    <div id="drafts"></div>
+    <div class="sender-actions"><button id="add-another" class="button outline">Add another family</button><button id="import" class="button gold">Add to roster</button><button id="close-review" class="button outline">Back to roster</button></div>
+  </section>
+</main>
+<dialog id="delete-dialog" aria-labelledby="delete-title"><h2 id="delete-title">Delete this family?</h2><p id="delete-description"></p><div class="sender-actions"><button id="delete-confirm" class="button danger">Delete family</button><button id="delete-cancel" class="button outline">Cancel</button></div></dialog>
+<dialog id="send-dialog" aria-labelledby="send-title"><h2 id="send-title">Ready to send</h2><p id="send-family"></p><p>Open your messaging app and press Send there. Then return here to confirm the result. Opening the app does not mean the invitation was sent. If reviewing an earlier attempt, check your conversation before sending again.</p><textarea id="message-preview" readonly aria-label="Invitation message"></textarea><div class="sender-actions"><a id="open-message" class="button gold">Open messaging app ↗</a><button id="copy-message" class="button outline">Copy message</button></div><div class="sender-actions"><button id="mark-sent" class="button gold">I sent it</button><button id="mark-canceled" class="button outline">I did not send it</button><button id="send-close" class="button outline">Decide later</button></div><p id="send-notice" role="status"></p></dialog>
+</body>
+</html>

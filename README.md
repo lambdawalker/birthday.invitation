@@ -138,3 +138,28 @@ The invitation scrolls at 12 pixels/second after a short reading pause. Any touc
 pointer press, wheel input, keyboard input or manual scroll stops it for that page
 visit. It also stops when the page is hidden and respects reduced-motion settings.
 The gift image links to the gift section; parking content has been removed.
+
+### Mobile web sender
+
+Deploy normally, then open `/sender.html` on your phone. Administrators create a
+username and single-use PIN in the existing report or sending page; the PIN output
+now includes the web sender URL. PINs expire after 15 minutes. Regenerating a PIN
+invalidates the previous Android/web session while keeping family assignments.
+
+The sender can claim families, import multiple selected contacts, add families
+manually, delete assigned families, and prepare SMS or WhatsApp invitations.
+Contact selection requires HTTPS and a supporting browser (Chrome on Android);
+unsupported browsers show manual entry. Only reviewed contacts are uploaded.
+Each local number starts with a blank country code, with per-contact US +1 and
+Mexico +52 choices. Explicit international numbers keep their country code.
+Imports run in batches of 20 and safely skip existing phone numbers on retries.
+
+A prepared message stays unconfirmed across reloads. Open the messaging app,
+press Send there, then return and choose **I sent it**. The browser cannot send
+silently or detect delivery. **Review sending** resumes an unresolved attempt;
+check the conversation before sending again. **I did not send it** allows a new
+attempt. Confirmed messages are recorded in the existing reports.
+
+Sign-in is kept in this tab by default. Opt into **Keep me signed in** only on a
+personal device. PINs are never stored; signing out revokes the session and
+requires a new PIN. No new cloud services or infrastructure are required.

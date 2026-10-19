@@ -1,0 +1,28 @@
+.sender-shell { max-width: 980px; margin: auto; padding: 20px 20px 60px; }
+.sender-header,.sender-heading { display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:24px; }
+.sender-header .brand { font-size:26px; }
+.sender-page h1 { font-size:clamp(2rem,5vw,3.4rem); letter-spacing:-.03em; margin:10px 0 20px; }
+.sender-page h2 { font-size:1.5rem; margin:0 0 12px; }
+.sender-panel { background:#fffdf7; border:1px solid var(--line); border-radius:20px; padding:24px; }
+#signin { max-width:520px; margin:40px auto; }
+.sender-page label { display:block; font-size:.9rem; margin:12px 0; }
+.sender-page input:not([type=checkbox]),.sender-page select,.sender-page textarea { width:100%; font:inherit; padding:12px; border:1px solid #a8b3a4; border-radius:8px; background:white; color:var(--ink); }
+.sender-page .remember { display:flex; gap:10px; align-items:center; }
+.sender-page button,.sender-page .button { cursor:pointer; min-height:46px; }
+.sender-page button:disabled { cursor:wait; }
+.sender-actions { display:flex; flex-wrap:wrap; gap:10px; margin:14px 0; }
+.sender-notice { padding:12px; background:#e8e3d3; border-radius:10px; overflow-wrap:anywhere; }
+.sender-notice:empty { display:none; }
+.sender-summary { margin:20px 0; font-weight:600; }
+.sender-toolbar { display:grid; grid-template-columns:1fr 220px; gap:12px; margin:20px 0; }
+.sender-roster { display:grid; gap:14px; }
+.family-card,.draft-card { padding:20px; border:1px solid var(--line); background:#fffdf7; border-radius:14px; overflow-wrap:anywhere; }
+.family-card p { margin:5px 0; }
+.draft-card { margin-bottom:14px; }
+.sender-page .danger { background:#8a3030; color:white; }
+.sender-page .muted { font-size:.85rem; }
+.sender-page dialog { width:min(94vw,580px); max-height:85dvh; overflow:auto; border:0; border-radius:18px; padding:24px; background:var(--cream); color:var(--ink); }
+.sender-page dialog::backdrop { background:#102c25b3; }
+#message-preview { min-height:120px; }
+.country-shortcuts { display:flex; gap:8px; }
+@media(max-width:600px) { .sender-shell {padding:16px 14px 40px;} .sender-toolbar {grid-template-columns:1fr;} .sender-panel {padding:18px;} .sender-actions .button {flex:1 1 auto;} }
