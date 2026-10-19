@@ -97,3 +97,6 @@ Typed answers override the displayed defaults. For the AWS profile and Cloudflar
 
 
 If Pulumi offers to create a new project or asks for an empty directory after login, cancel with Ctrl+C and update the repository before rerunning the launcher. The wizard runs all Pulumi commands with `--non-interactive`, uses the existing `infra` directory, and creates/selects the configured stack itself. Keep your existing state bucket and encryption passphrase.
+
+
+If an update fails with CloudFront `NoSuchCachePolicy`, update to the corrected infrastructure code and rerun the launcher with the same AWS account, state bucket, stack, and encryption passphrase. The API behavior uses AWS's managed CachingDisabled policy (`4135ea2d-6df8-44a3-9df3-4b5a84be39ad`). Pulumi retains resources successfully created before a failure and reconciles them on the next update; do not delete the stack or recreate the bucket to retry.
