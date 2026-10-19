@@ -63,7 +63,6 @@ form.addEventListener("submit", event => { event.preventDefault(); save("yes"); 
 if (token && /^[a-f0-9]{32}$/.test(token)) {
   try {
     family = await api(`/api/invitations/${token}`);
-    $("#family-name").textContent = family.name;
     loading.hidden = true;
     $("#rsvp-controls").hidden = false;
     render();
@@ -79,7 +78,7 @@ document.querySelector("#map-house").onclick = () => {
   document.querySelector("#parking-map").src =
     "https://maps.google.com/maps?q=31.7413977,-106.4310122&z=17&output=embed";
   document.querySelector("#map-caption").textContent =
-    "Casa: Calle Arquitectura #419. Puedes estacionarte frente a la propiedad.";
+    "Vista de la casa.";
 };
 document.querySelector("#map-parking").onclick = () => {
   document.querySelector("#parking-map").src =
