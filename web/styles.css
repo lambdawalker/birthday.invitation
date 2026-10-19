@@ -767,7 +767,6 @@ td small {
 .rsvp-dock p { margin: 0 0 6px; }
 .rsvp-dock #rsvp-status:empty { display: none; }
 .rsvp-dock #rsvp-status { font-size: .85rem; margin: 6px 0 0; }
-.dock-family { font-size: .85rem; }
 .dock-actions { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
 .rsvp-dock .outline { color: var(--cream); border-color: var(--gold); }
 .rsvp-dock .button { margin: 0; padding: 11px 20px; }
@@ -780,4 +779,13 @@ button:disabled { opacity: .6; cursor: wait; }
  .rsvp-dock { padding-inline: 10px; }
  .rsvp-dock .button { padding: 10px 12px; font-size: .85rem; }
  .dock-actions { gap: 8px; }
+}
+
+.invitation-page .hero { padding-top: 35px; }
+.invitation-page .hero .eyebrow { margin-bottom: 11px; }
+.hero-address { display: inline-block; color: var(--gold); font-size: 1.1rem; text-underline-offset: 5px; }
+.hero-address:hover { color: var(--cream); }
+.hospitality { text-align: center; margin: 0; padding: 20px 24px 0; }
+@media (max-width: 760px) {
+ .invitation-page .hero { padding-top: 22.5px; }
 }
