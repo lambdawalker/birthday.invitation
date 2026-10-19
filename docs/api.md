@@ -1,6 +1,6 @@
 # Shared API v1
 
-All routes are same-origin `/api`. JSON UTF-8. Errors: `{ "error": "Spanish message" }`. 400 invalid data, 401 invalid/expired credentials, 403 scope/origin, 404 missing invitation, 409 conflict, 503 transient persistence error. Do not blindly retry sends after 409/timeouts.
+All routes are same-origin `/api`. JSON UTF-8. Errors: `{ "error": "message" }` (new user authentication messages are English). 400 invalid data, 401 invalid/expired credentials, 403 scope/origin, 404 missing invitation, 409 conflict, 503 transient persistence error. Do not blindly retry sends after 409/timeouts.
 
 ## Public
 - `GET /api/invitations/{id}`: `{name,rsvp,adults,children}` only; no contact information.
@@ -15,8 +15,22 @@ All routes are same-origin `/api`. JSON UTF-8. Errors: `{ "error": "Spanish mess
 - `POST /api/admin/devices` with `{name}` → `{id,name,token,baseUrl}`. Raw token shown once. Server stores SHA-256 hash only.
 - `DELETE /api/admin/devices/{id}` revokes token. Ownership stays visible; administrator reconciles in-flight attempts before release.
 
+## App users and single-use PINs
+Administrator authentication is required for all `/admin/users` routes:
+- `GET /api/admin/users` → `[{id,username,status,pinExpires}]`, without PIN/session hashes.
+- `POST /api/admin/users` with `{username}` → `{user,pin,baseUrl}`. Usernames are case-insensitive, trimmed and unique; 3–40 ASCII letters/digits/dots/underscores/hyphens, starting with a letter or digit. Duplicate names return 409.
+- `POST /api/admin/users/{id}/pin` → `{user,pin,baseUrl}`. Replaces any previous PIN and session, restores revoked access, and preserves the user's stable assignment ID.
+- `DELETE /api/admin/users/{id}` revokes both PIN and session; assignments are retained.
+
+Public sign-in:
+- `POST /api/user/login` with `{username,pin}` → `{token,id,username,baseUrl}`.
+- PIN is an eight-digit string (preserve leading zeros), expires in 15 minutes, and is consumed atomically. Five incorrect valid-format attempts lock it until the administrator generates another PIN. Invalid, expired, consumed, locked and unknown-user attempts return the same 401. Contention may return 429; storage errors return 503. Do not automatically retry a successful/uncertain sign-in: ask for a new PIN if the response was lost.
+- `POST /api/user/logout` with the user bearer token invalidates its session; sign-in requires a newly generated PIN.
+
+PIN verifiers are HMAC-SHA256 using the backend secret; only a SHA256 session hash is stored. Conditional revisions enforce single use and failed-attempt limits across Lambda instances. Sessions persist until logout, revocation or PIN regeneration. Each user has one active session. The PIN is never returned by list routes.
+
 ## Android device
-Use `Authorization: Bearer device_...`. No AWS credentials. Device ID is lower-case SHA-256 of credential.
+New sign-ins use `Authorization: Bearer user_<stable-id>.<random-secret>`. Use the returned `id` (also the token's stable-id segment) for ownership checks, not a hash of the full session token. Legacy `device_...` credentials remain supported with their original SHA256 identity.
 - `GET /api/families` → `{families:[Family],baseUrl}`.
 - `POST /api/families/{id}/actions`: `{action,channel?,attemptId?,status?,detail?}`.
 

@@ -41,6 +41,17 @@ func (s *Server) actor(r *http.Request) (Device, bool) {
 		return Device{ID: "admin", Name: "Administrador"}, true
 	}
 	t := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+	if strings.HasPrefix(t, "user_") {
+		parts := strings.Split(strings.TrimPrefix(t, "user_"), ".")
+		if len(parts) != 2 || len(parts[0]) != 64 || len(parts[1]) != 64 {
+			return Device{}, false
+		}
+		u, err := s.store.GetUser(r.Context(), parts[0])
+		if err != nil || u.Revoked || u.SessionHash == "" || !equal(u.SessionHash, HashToken(t)) {
+			return Device{}, false
+		}
+		return Device{ID: u.ID, Name: u.Username, CreatedAt: u.CreatedAt}, true
+	}
 	if !strings.HasPrefix(t, "device_") {
 		return Device{}, false
 	}

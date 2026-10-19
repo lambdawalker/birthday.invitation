@@ -29,6 +29,8 @@ async function api(path, method = "GET", body) {
     body: body ? JSON.stringify(body) : undefined,
   });
   if (r.status === 401) {
+    $("#pairing").textContent = "";
+    $("#pairing").hidden = true;
     $("#login").hidden = false;
     $("#dashboard").hidden = true;
     $("#logout").hidden = true;
@@ -113,6 +115,11 @@ async function load() {
   $("#dashboard").hidden = false;
   $("#logout").hidden = false;
   render();
+  const users = await api("/admin/users");
+  const states = {pin_ready: "PIN ready", signed_in: "Signed in", needs_pin: "Needs a new PIN", revoked: "Access revoked"};
+  $("#users").innerHTML = users.map(u =>
+    `<div class="device-row"><span><strong>${esc(u.username)}</strong> · ${esc(states[u.status] || u.status)}</span><button data-pin="${esc(u.id)}" class="button outline">Generate new PIN</button>${u.status !== "revoked" ? `<button data-revoke-user="${esc(u.id)}" class="button outline">Revoke access</button>` : ""}</div>`
+  ).join("") || '<p class="muted">No app users yet.</p>';
   const devices = await api("/admin/devices");
   $("#devices").innerHTML =
     devices
@@ -134,6 +141,8 @@ $("#login-form").onsubmit = async (e) => {
   }
 };
 $("#logout").onclick = async () => {
+  $("#pairing").textContent = "";
+  $("#pairing").hidden = true;
   await api("/logout", "POST");
   location.reload();
 };
@@ -200,20 +209,41 @@ $("#rows").onclick = async (e) => {
     b.disabled = false;
   }
 };
+function showPIN(d) {
+  $("#pairing").hidden = false;
+  $("#pairing").textContent =
+    `Username: ${d.user.username}\nSingle-use PIN: ${d.pin}\nExpires: ${new Date(d.user.pinExpires * 1000).toLocaleString()}\nServer: ${d.baseUrl}\nShare this PIN privately. It is shown only once.`;
+}
 $("#device-form").onsubmit = async (e) => {
   e.preventDefault();
+  const button = e.currentTarget.querySelector("button");
+  button.disabled = true;
+  $("#pairing").hidden = true;
+  $("#pairing").textContent = "";
   try {
-    const d = await api("/admin/devices", "POST", {
-      name: $("#device-name").value,
-    });
-    $("#pairing").hidden = false;
-    $("#pairing").textContent =
-      `Servidor: ${d.baseUrl}\nCredencial (guárdala ahora): ${d.token}`;
+    const d = await api("/admin/users", "POST", {username: $("#device-name").value});
+    showPIN(d);
     $("#device-name").value = "";
     await load();
-  } catch (e) {
-    notice(e.message, true);
-  }
+  } catch (e) { notice(e.message, true); }
+  finally { button.disabled = false; }
+};
+$("#users").onclick = async (e) => {
+  const b = e.target.closest("[data-pin], [data-revoke-user]");
+  if (!b) return;
+  const reset = !!b.dataset.pin;
+  if (!confirm(reset
+    ? "Generate a new PIN? This replaces any previous PIN and signs out the current app session. Family assignments are kept. Stop any active sending first."
+    : "Revoke this user's access? Family assignments and sending history are kept.")) return;
+  b.disabled = true;
+  $("#pairing").hidden = true;
+  $("#pairing").textContent = "";
+  try {
+    if (reset) showPIN(await api("/admin/users/" + b.dataset.pin + "/pin", "POST", {}));
+    else await api("/admin/users/" + b.dataset.revokeUser, "DELETE");
+    await load();
+  } catch (e) { notice(e.message, true); }
+  finally { b.disabled = false; }
 };
 $("#devices").onclick = async (e) => {
   const b = e.target.closest("[data-device]");

@@ -7,6 +7,9 @@ import (
 )
 
 type Store interface {
+	GetUser(context.Context, string) (User, error)
+	Users(context.Context) ([]User, error)
+	SaveUser(context.Context, User, int) error
 	Get(context.Context, string) (Family, error)
 	List(context.Context) ([]Family, error)
 	Create(context.Context, Family) error
@@ -19,10 +22,11 @@ type MemoryStore struct {
 	mu       sync.Mutex
 	families map[string]Family
 	devices  map[string]Device
+	users    map[string]User
 }
 
 func NewMemoryStore() *MemoryStore {
-	return &MemoryStore{families: map[string]Family{}, devices: map[string]Device{}}
+	return &MemoryStore{families: map[string]Family{}, devices: map[string]Device{}, users: map[string]User{}}
 }
 func clone(f Family) Family {
 	b, _ := json.Marshal(f)
@@ -93,4 +97,33 @@ func (m *MemoryStore) Devices(_ context.Context) ([]Device, error) {
 		ds = append(ds, d)
 	}
 	return ds, nil
+}
+
+func (m *MemoryStore) GetUser(_ context.Context, id string) (User, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	u, ok := m.users[id]
+	if !ok {
+		return u, ErrNotFound
+	}
+	return u, nil
+}
+func (m *MemoryStore) Users(_ context.Context) ([]User, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	out := []User{}
+	for _, u := range m.users {
+		out = append(out, u)
+	}
+	return out, nil
+}
+func (m *MemoryStore) SaveUser(_ context.Context, u User, rev int) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	old, ok := m.users[u.ID]
+	if (rev == 0 && ok) || (rev != 0 && (!ok || old.Revision != rev)) {
+		return ErrConflict
+	}
+	m.users[u.ID] = u
+	return nil
 }
