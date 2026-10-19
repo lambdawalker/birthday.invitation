@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -117,6 +118,65 @@ func TestLookupZone(t *testing.T) {
 			} else if err == nil || strings.Contains(err.Error(), "secret response") || strings.Contains(err.Error(), "test-token") {
 				t.Fatalf("unsafe or missing error: %v", err)
 			}
+		})
+	}
+}
+
+// Simulate first-login onboarding when no stacks exist. Without the global
+// flag this helper fails rather than hanging waiting for project creation.
+func TestPulumiCLIHelper(t *testing.T) {
+	if os.Getenv("ABI_PULUMI_TEST_HELPER") != "1" {
+		return
+	}
+	found := false
+	for _, arg := range os.Args {
+		if arg == "--non-interactive" {
+			found = true
+		}
+	}
+	if !found {
+		fmt.Fprintln(os.Stderr, "You don't have any stacks yet. Create a new Pulumi project")
+		os.Exit(2)
+	}
+	dir, err := os.Getwd()
+	if err != nil || filepath.Base(dir) != "infra" {
+		os.Exit(3)
+	}
+	input, err := io.ReadAll(os.Stdin)
+	if err != nil || string(input) != os.Getenv("ABI_EXPECTED_INPUT") {
+		os.Exit(4)
+	}
+	fmt.Print("ok")
+	os.Exit(0)
+}
+
+func TestPulumiCommandsSkipOnboarding(t *testing.T) {
+	t.Setenv("ABI_PULUMI_TEST_HELPER", "1")
+	root := t.TempDir()
+	if err := os.Mkdir(filepath.Join(root, "infra"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name, input string
+		capture     bool
+		args        []string
+	}{
+		{"login", "", false, []string{"login", "s3://test-state/birthday-invitation"}},
+		{"list", "", true, []string{"stack", "ls", "--json"}},
+		{"init", "", false, []string{"stack", "init", "production", "--secrets-provider", "passphrase"}},
+		{"secret", "test-secret\n", true, []string{"config", "set", "adminKey", "--secret"}},
+		{"preview", "", false, []string{"preview", "--diff"}},
+		{"up", "", false, []string{"up", "--yes", "--skip-preview"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("ABI_EXPECTED_INPUT", tc.input)
+			w := &wizard{root: root, output: io.Discard, newCommand: func(name string, args ...string) *exec.Cmd {
+				if name != "pulumi" {
+					t.Fatalf("unexpected command %s", name)
+				}
+				return exec.Command(os.Args[0], append([]string{"-test.run=^TestPulumiCLIHelper$", "--"}, args...)...)
+			}}
+			w.must(tc.input, tc.capture, append([]string{"pulumi"}, tc.args...)...)
 		})
 	}
 }
