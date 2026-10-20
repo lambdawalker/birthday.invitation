@@ -216,3 +216,48 @@ Keep a secure backup of the encrypted file and its passphrase. If the passphrase
 is lost, move the file aside and reenter the settings, token and original Pulumi
 passphrase. Creating a new local vault does not recover or reset Pulumi secrets.
 Use a separate checkout/vault for deployments to another AWS account.
+
+### Parallax visual test
+
+Serve the isolated preview (no deployment or backend needed):
+
+```sh
+python -m http.server 8000 --directory previews/sky-kingdom
+```
+
+Open http://localhost:8000. See `previews/sky-kingdom/README.md` for controls and
+limitations. It is outside the production `web/` folder; RSVP buttons are mock UI.
+
+### Git LFS for artwork and media
+
+Install Git LFS, then run these once per clone before adding source artwork:
+
+```sh
+git lfs install
+git lfs pull
+```
+
+`.gitattributes` tracks raster source images (PNG, JPEG, WebP, GIF, TIFF), layered
+artwork (PSD, PSB, KRA, XCF, Blender), video (MP4, MOV, WebM), and uncompressed or
+lossless audio (WAV, FLAC). Code, SVG, JSON, YAML and ordinary documents stay in Git.
+Small optimized WebP files in `previews/**/assets/` are explicitly exempt so test
+pages remain directly servable. Build archives remain ignored, not versioned.
+CI checks out LFS objects automatically. Before deploying locally, run
+`git lfs pull` so assets contain image data rather than pointer files.
+
+This setup does not rewrite history or migrate existing tracked images. New files
+matching the patterns use LFS; edited existing files can transition on their next
+add. To intentionally migrate currently tracked production images in a new commit:
+
+```sh
+git add --renormalize web/assets
+git lfs status
+git commit -m "Move production artwork to Git LFS"
+git push
+```
+
+The LFS pre-push hook uploads the corresponding objects. Do not publish pointer
+files through the GitHub file API without also uploading their LFS objects. Keep
+`.gitattributes` committed. LFS storage/bandwidth is separate from ordinary Git;
+check your account usage before adding large originals. No history migration has
+been performed by this change.
