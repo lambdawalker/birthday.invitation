@@ -9,3 +9,5 @@ infra/Pulumi.*.yaml
 !examples/guests.csv
 __pycache__/
 playwright-report/
+
+.deploy-memory*

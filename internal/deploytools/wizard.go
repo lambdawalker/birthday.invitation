@@ -57,10 +57,12 @@ type commandResult struct {
 	err            error
 }
 type wizard struct {
-	root       string
-	input      io.Reader
-	output     io.Writer
-	newCommand func(string, ...string) *exec.Cmd
+	memory      deploymentMemory
+	reconfigure bool
+	root        string
+	input       io.Reader
+	output      io.Writer
+	newCommand  func(string, ...string) *exec.Cmd
 }
 type aborted struct{ err error }
 
@@ -119,6 +121,20 @@ func (w *wizard) secret(env, label string) string {
 	}
 	return string(b)
 }
+func (w *wizard) hiddenValue(label, fallback string) string {
+	if !term.IsTerminal(int(os.Stdin.Fd())) {
+		stop(errors.New("reconfiguring saved private values requires a terminal"))
+	}
+	fmt.Fprintf(w.output, "%s (hidden): ", label)
+	b, err := term.ReadPassword(int(os.Stdin.Fd()))
+	fmt.Fprintln(w.output)
+	stop(err)
+	if len(b) == 0 {
+		return fallback
+	}
+	return string(b)
+}
+
 func (w *wizard) command(dir, input string, capture bool, args ...string) commandResult {
 	// Machine-readable output must not inherit a user's text/table/yaml profile.
 	// Command-line options override AWS_DEFAULT_OUTPUT without modifying it.
@@ -160,7 +176,9 @@ func (w *wizard) must(input string, capture bool, args ...string) string {
 	return r.stdout
 }
 
-func Deploy(root string) (err error) {
+func Deploy(root string) error { return DeployWithOptions(root, false) }
+
+func DeployWithOptions(root string, reconfigure bool) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			if a, ok := r.(aborted); ok {
@@ -172,12 +190,30 @@ func Deploy(root string) (err error) {
 	}()
 	defaults, configErr := loadDefaults(root)
 	stop(configErr)
-	w := &wizard{root: root, input: os.Stdin, output: os.Stdout}
+	w := &wizard{root: root, input: os.Stdin, output: os.Stdout, reconfigure: reconfigure, memory: deploymentMemory{Values: map[string]string{}}}
 	fmt.Fprintln(w.output, "\n✦ ABI · Deployment wizard\n  Go + AWS + Cloudflare · private S3 state")
 	w.step(1, "Check prerequisites")
 	stop(CheckTools())
+	memoryPath := filepath.Join(root, memoryFile)
+	_, memoryErr := os.Stat(memoryPath)
+	if memoryErr != nil && !errors.Is(memoryErr, os.ErrNotExist) {
+		stop(memoryErr)
+	}
+	password := w.secret("ABI_DEPLOY_PASSPHRASE", "Local deployment vault passphrase")
+	if memoryErr == nil {
+		w.memory, memoryErr = readMemory(memoryPath, password)
+		stop(memoryErr)
+		fmt.Fprintln(w.output, "Saved deployment settings unlocked. Use --reconfigure to change them.")
+	} else {
+		if len(password) < 12 {
+			stop(errors.New("use at least 12 characters for the local vault passphrase"))
+		}
+		if os.Getenv("ABI_DEPLOY_PASSPHRASE") == "" && password != w.secret("ABI_DEPLOY_PASSPHRASE_CONFIRM", "Confirm local vault passphrase") {
+			stop(errors.New("vault passphrases do not match"))
+		}
+	}
 	w.step(2, "Connect to AWS")
-	profile := w.ask("AWS SSO profile", envDefault("AWS_PROFILE", defaults.AWSProfile))
+	profile := w.remember("profile", "AWS SSO profile", envDefault("AWS_PROFILE", defaults.AWSProfile))
 	stop(os.Setenv("AWS_PROFILE", profile))
 	stop(os.Setenv("AWS_PAGER", ""))
 	if r := w.command(root, "", true, "aws", "sts", "get-caller-identity"); r.err != nil {
@@ -189,12 +225,16 @@ func Deploy(root string) (err error) {
 	if identity.Account == "" {
 		stop(errors.New("AWS did not return an account ID"))
 	}
+	if w.memory.Account != "" && w.memory.Account != identity.Account {
+		stop(errors.New("AWS account differs from the saved deployment; use a separate checkout and vault for another account"))
+	}
+	w.memory.Account = identity.Account
 	fmt.Fprintln(w.output, "AWS account:", identity.Account)
-	region := w.ask("AWS region", defaults.AWSRegion)
+	region := w.remember("region", "AWS region", defaults.AWSRegion)
 	stop(os.Setenv("AWS_REGION", region))
 	stop(os.Setenv("AWS_DEFAULT_REGION", region))
 	w.step(3, "Prepare private Pulumi state")
-	bucket := w.ask("State bucket", defaults.bucket(identity.Account, region))
+	bucket := w.remember("bucket", "State bucket", defaults.bucket(identity.Account, region))
 	if !ValidBucket(bucket) {
 		stop(errors.New("invalid bucket name"))
 	}
@@ -215,9 +255,9 @@ func Deploy(root string) (err error) {
 	w.must("", true, "aws", "s3api", "put-public-access-block", "--bucket", bucket, "--public-access-block-configuration", "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true")
 	w.must("", true, "aws", "s3api", "put-bucket-versioning", "--bucket", bucket, "--versioning-configuration", "Status=Enabled")
 	w.must("", true, "aws", "s3api", "put-bucket-encryption", "--bucket", bucket, "--server-side-encryption-configuration", `{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}`)
-	stop(os.Setenv("PULUMI_CONFIG_PASSPHRASE", w.secret("PULUMI_CONFIG_PASSPHRASE", "Pulumi encryption passphrase (save it and reuse it)")))
+	stop(os.Setenv("PULUMI_CONFIG_PASSPHRASE", w.rememberSecret("pulumiPassphrase", "PULUMI_CONFIG_PASSPHRASE", "Pulumi encryption passphrase (save it and reuse it)")))
 	w.must("", false, "pulumi", "login", "s3://"+bucket+"/birthday-invitation")
-	stack := w.ask("Stack", defaults.Stack)
+	stack := w.remember("stack", "Stack", defaults.Stack)
 	if !regexp.MustCompile(`^[a-zA-Z0-9_-]+$`).MatchString(stack) {
 		stop(errors.New("invalid stack name"))
 	}
@@ -238,17 +278,21 @@ func Deploy(root string) (err error) {
 		w.must("", false, "pulumi", "stack", "init", stack, "--secrets-provider", "passphrase")
 	}
 	w.step(4, "Domain and secrets")
-	domain := w.ask("Domain", defaults.Domain)
-	contactPhone := defaults.ContactPhone
-	if contactPhone == "" {
-		contactPhone = w.ask("Public contact phone for questions (include +52 or +1)", "")
+	previousDomain := w.memory.Values["domain"]
+	domain := w.remember("domain", "Domain", defaults.Domain)
+	if previousDomain != "" && domain != previousDomain {
+		w.memory.Values["zone"] = "auto"
 	}
+	if w.memory.Values["contactPhone"] == "" && defaults.ContactPhone != "" {
+		w.memory.Values["contactPhone"] = defaults.ContactPhone
+	}
+	contactPhone := w.rememberSecret("contactPhone", "ABI_CONTACT_PHONE", "Public contact phone for questions (include +52 or +1)")
 	var phoneErr error
 	contactPhone, phoneErr = NormalizeContactPhone(contactPhone)
 	stop(phoneErr)
-	zone := w.ask("Cloudflare Zone ID (auto detects the domain)", envDefault("CLOUDFLARE_ZONE_ID", defaults.CloudflareZoneID))
+	zone := w.remember("zone", "Cloudflare Zone ID (auto detects the domain)", envDefault("CLOUDFLARE_ZONE_ID", defaults.CloudflareZoneID))
 
-	stop(os.Setenv("CLOUDFLARE_API_TOKEN", w.secret("CLOUDFLARE_API_TOKEN", "Cloudflare token (DNS Edit and Zone Read, scoped to this zone)")))
+	stop(os.Setenv("CLOUDFLARE_API_TOKEN", w.rememberSecret("cloudflareToken", "CLOUDFLARE_API_TOKEN", "Cloudflare token (DNS Edit and Zone Read, scoped to this zone)")))
 	if strings.EqualFold(zone, "auto") {
 		var err error
 		zone, err = lookupZone(&http.Client{Timeout: 30 * time.Second}, "https://api.cloudflare.com/client/v4", domain, os.Getenv("CLOUDFLARE_API_TOKEN"))
@@ -256,9 +300,16 @@ func Deploy(root string) (err error) {
 		fmt.Fprintln(w.output, "Cloudflare Zone ID:", zone)
 	}
 
-	for _, pair := range [][2]string{{"aws:region", region}, {"domain", domain}, {"cloudflareZoneId", zone}, {"contactPhone", contactPhone}} {
+	w.memory.Values["zone"] = zone
+	w.memory.Values["contactPhone"] = contactPhone
+	stop(writeMemory(memoryPath, password, w.memory))
+	stop(migratePrivateDefault(root))
+	fmt.Fprintln(w.output, "Deployment answers saved in the encrypted local vault.")
+
+	for _, pair := range [][2]string{{"aws:region", region}, {"domain", domain}, {"cloudflareZoneId", zone}} {
 		w.must("", false, "pulumi", "config", "set", pair[0], pair[1])
 	}
+	w.must(contactPhone+"\n", true, "pulumi", "config", "set", "contactPhone", "--secret")
 	var configs map[string]json.RawMessage
 	stop(decodeCommandJSON("pulumi config --json", w.must("", true, "pulumi", "config", "--json"), &configs))
 	for _, name := range []string{"adminKey", "importNamespace"} {
