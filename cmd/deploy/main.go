@@ -9,6 +9,7 @@ import (
 
 func main() {
 	check := flag.Bool("check", false, "Check Go, AWS CLI and Pulumi availability without changing cloud resources")
+	reconfigure := flag.Bool("reconfigure", false, "Review saved deployment settings and update private values")
 	flag.Parse()
 	var err error
 	if *check {
@@ -20,7 +21,7 @@ func main() {
 		var root string
 		root, err = deploytools.FindRoot(".")
 		if err == nil {
-			err = deploytools.Deploy(root)
+			err = deploytools.DeployWithOptions(root, *reconfigure)
 		}
 	}
 	if err != nil {

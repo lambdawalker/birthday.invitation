@@ -125,13 +125,13 @@ The invitation uses a fixed bottom response bar: accept opens a family-size dial
 
 ### Public contact phone and invitation motion
 
-Set `contact_phone: "+526561234567"` (replace with your real number) in
-`deploy.defaults.yaml`. If it is missing or blank, the deployment wizard asks for
-it; a configured value skips that prompt. Include the international +52 or +1
-prefix. This number is public and appears as a calling link under the address
-and in the footer, labelled “Dudas y aclaraciones”. The wizard stores it as the
-Pulumi `contactPhone` setting; infrastructure publishes only that public field in
-`site-config.json`. Direct Pulumi deployments can set `contactPhone` explicitly.
+The deployment wizard asks for the contact phone using hidden input and stores it
+in the encrypted local deployment vault. Set `ABI_CONTACT_PHONE` to supply or
+replace it without a prompt, or use `--reconfigure`. Include +52 or +1. Legacy
+`contact_phone` YAML values are migrated into the vault and cleared from the file.
+Pulumi stores `contactPhone` as a secret. The number is intentionally published in
+`site-config.json` and displayed on the invitation as “Dudas y aclaraciones”; local
+storage encryption does not make the published contact number private.
 The local demo has no contact number until configured.
 
 The invitation scrolls at 12 pixels/second after a short reading pause. Any touch,
@@ -172,3 +172,47 @@ attempt. Confirmed messages are recorded in the existing reports.
 Sign-in is kept in this tab by default. Opt into **Keep me signed in** only on a
 personal device. PINs are never stored; signing out revokes the session and
 requires a new PIN. No new cloud services or infrastructure are required.
+
+### Remembered deployment settings
+
+The first run after upgrading creates `.deploy-memory.enc` in the repository root.
+Choose a separate local vault passphrase (at least 12 characters) and retain it.
+Your existing Pulumi passphrase is still required once; it is saved inside the
+vault along with the Cloudflare token, contact phone, AWS profile, region, actual
+state bucket, stack, domain, and resolved zone ID. AWS session credentials are
+never copied into the vault; expired sessions still trigger AWS SSO login.
+
+Subsequent `deploy.bat` / `deploy.sh` runs ask only to unlock the vault, reuse the
+saved setup answers, and show the preview and final DEPLOY/CANCEL prompt. Answers
+are saved once setup reaches the configuration stage, before build and preview,
+so a later failure or canceled deployment preserves them. This file records setup
+choices, not a claim that the deployment succeeded. A different AWS account is
+rejected to avoid using the saved backend for the wrong account.
+
+To change saved settings:
+
+```powershell
+.\deploy.bat --reconfigure
+```
+
+```sh
+./deploy.sh --reconfigure
+```
+
+Public fields show their saved defaults. Hidden secret prompts accept Enter to
+keep the existing value. Saved settings take precedence over YAML defaults and
+profile/zone environment defaults. `CLOUDFLARE_API_TOKEN`,
+`PULUMI_CONFIG_PASSPHRASE`, and `ABI_CONTACT_PHONE` explicitly replace corresponding
+saved private values when set. `ABI_DEPLOY_PASSPHRASE` can unlock the vault without
+a terminal prompt; it is never saved inside or alongside the file. The initial
+interactive setup asks you to confirm the vault passphrase.
+
+The versioned vault uses AES-256-GCM authenticated encryption with a fresh salt
+and nonce on every write and scrypt (N=32768, r=8, p=1) for key derivation. Writes
+use a synced temporary file and replacement; temporary files and the vault are
+Git-ignored. Unix file permissions are 0600; on Windows files inherit the parent
+folder's ACL. Wrong passphrases or damaged files stop without replacing the vault.
+Keep a secure backup of the encrypted file and its passphrase. If the passphrase
+is lost, move the file aside and reenter the settings, token and original Pulumi
+passphrase. Creating a new local vault does not recover or reset Pulumi secrets.
+Use a separate checkout/vault for deployments to another AWS account.
