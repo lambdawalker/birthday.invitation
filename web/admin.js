@@ -99,15 +99,15 @@ function render() {
   $("#head").innerHTML =
     "<tr><th>Familia</th><th>Asistencia</th><th>Envío</th><th>Asignación</th>" +
     (isSend ? "<th>Acciones</th>" : "<th>Último cambio</th>") +
-    "</tr>";
+    "<th>Guest management</th></tr>";
   $("#rows").innerHTML =
     shown
       .map(
         (f) =>
-          `<tr data-id="${esc(f.id)}"><td><strong>${esc(f.name)}</strong><small>${esc(f.phone)}</small>${!isSend ? `<small>${esc(f.email)}</small>` : ""}</td><td>${badge(f.rsvp, f.rsvp === "pending" ? "Sin respuesta" : null)}${f.rsvp === "yes" ? `<small>${f.headcountUnknown ? "Cantidad de personas pendiente" : `${f.adults} adultos · ${f.children} niños`}</small>` : ""}</td><td>${badge(f.status)}<small>${esc(f.channel || "")}</small>${f.history?.length ? `<details><summary>Historial</summary>${f.history.map((e) => `<p>${esc(labels[e.status] || e.status)} · ${esc(e.at)}<br>${esc(e.actor)} ${esc(e.detail || "")}</p>`).join("")}</details>` : ""}</td><td>${esc(f.assignedName || "Sin asignar")}</td>${isSend ? `<td><div class="row-actions"><button data-action="copy">Copiar mensaje</button><a href="sms:${esc(f.phone)}?body=${encodeURIComponent(message(f))}">Abrir SMS</a><button data-action="whatsapp">WhatsApp</button><button data-action="manual-sms">Marcar SMS enviado</button><button data-action="manual-whatsapp">Marcar WhatsApp enviado</button>${f.assignedTo ? '<button data-action="release">Liberar asignación</button>' : ""}${f.status !== "pending" ? '<button data-action="reset">Preparar reenvío</button>' : ""}${f.status === "sending" ? '<button data-action="uncertain">Marcar por verificar</button>' : ""}</div></td>` : `<td>${f.updatedAt ? esc(new Date(f.updatedAt).toLocaleString("es-MX")) : "—"}</td>`}</tr>`,
+          `<tr data-id="${esc(f.id)}"><td><strong>${esc(f.name)}</strong><small>${esc(f.phone)}</small>${!isSend ? `<small>${esc(f.email)}</small>` : ""}</td><td>${badge(f.rsvp, f.rsvp === "pending" ? "Sin respuesta" : null)}${f.rsvp === "yes" ? `<small>${f.headcountUnknown ? "Cantidad de personas pendiente" : `${f.adults} adultos · ${f.children} niños`}</small>` : ""}</td><td>${badge(f.status)}<small>${esc(f.channel || "")}</small>${f.history?.length ? `<details><summary>Historial</summary>${f.history.map((e) => `<p>${esc(labels[e.status] || e.status)} · ${esc(e.at)}<br>${esc(e.actor)} ${esc(e.detail || "")}</p>`).join("")}</details>` : ""}</td><td>${esc(f.assignedName || "Sin asignar")}</td>${isSend ? `<td><div class="row-actions"><button data-action="copy">Copiar mensaje</button><a href="sms:${esc(f.phone)}?body=${encodeURIComponent(message(f))}">Abrir SMS</a><button data-action="whatsapp">WhatsApp</button><button data-action="manual-sms">Marcar SMS enviado</button><button data-action="manual-whatsapp">Marcar WhatsApp enviado</button>${f.assignedTo ? '<button data-action="release">Liberar asignación</button>' : ""}${f.status !== "pending" ? '<button data-action="reset">Preparar reenvío</button>' : ""}${f.status === "sending" ? '<button data-action="uncertain">Marcar por verificar</button>' : ""}</div></td>` : `<td>${f.updatedAt ? esc(new Date(f.updatedAt).toLocaleString("es-MX")) : "—"}</td>`}<td><div class="row-actions"><button data-action="copy-link">Copy invitation link</button><button data-action="delete" ${["sending", "uncertain", "whatsapp_opened"].includes(f.status) ? 'disabled title="Resolve the pending send before deleting"' : ""}>Delete family</button></div></td></tr>`,
       )
       .join("") ||
-    '<tr><td colspan="5">No hay familias para este filtro.</td></tr>';
+    '<tr><td colspan="6">No hay familias para este filtro.</td></tr>';
 }
 async function load() {
   const d = await api("/admin/families");
@@ -153,9 +153,27 @@ $("#filter").onchange = render;
 $("#refresh").onclick = () => load().catch((e) => notice(e.message, true));
 $("#rows").onclick = async (e) => {
   const b = e.target.closest("button[data-action]");
-  if (!b) return;
+  if (!b || b.disabled) return;
   const f = families.find((f) => f.id === b.closest("tr").dataset.id);
   try {
+    if (b.dataset.action === "copy-link") {
+      const link = `${baseUrl.replace(/\/$/, "")}/?i=${encodeURIComponent(f.id)}`;
+      try {
+        await navigator.clipboard.writeText(link);
+        notice("Invitation link copied.");
+      } catch {
+        prompt("Copy this invitation link:", link);
+      }
+      return;
+    }
+    if (b.dataset.action === "delete") {
+      if (!confirm(`Delete ${f.name} from the shared roster? This removes RSVP and sending history and invalidates the invitation link. Phone contacts are not deleted.`)) return;
+      b.disabled = true;
+      await api(`/families/${f.id}`, "DELETE");
+      await load();
+      notice("Family deleted from the roster.");
+      return;
+    }
     if (b.dataset.action === "copy") {
       await navigator.clipboard.writeText(message(f));
       notice("Mensaje copiado. Márcalo como enviado después de enviarlo.");
@@ -310,3 +328,28 @@ $("#export").onclick = () => {
 load().catch((e) => {
   if (!$("#dashboard").hidden) notice(e.message, true);
 });
+
+$("#create-family-form").onsubmit = async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget, button = form.querySelector("button");
+  if (button.disabled) return;
+  button.disabled = true;
+  const status = $("#create-family-status");
+  status.textContent = "Creating family…";
+  try {
+    const contact = {name: $("#family-name").value.trim(), phone: $("#family-phone").value.trim(), email: $("#family-email").value.trim()};
+    if (!contact.name || new TextEncoder().encode(contact.name).length > 120) throw Error("Enter a name up to 120 UTF-8 bytes.");
+    const data = await api("/families/import", "POST", {contacts: [contact]});
+    const result = data.results?.[0];
+    if (result?.status === "existing") {
+      status.textContent = "This phone number is already in the roster. The existing family was kept unchanged.";
+      return;
+    }
+    if (result?.status !== "added") throw Error(result?.message || "Creation could not be confirmed. Retry safely; duplicate phone numbers are skipped.");
+    form.reset();
+    $("#search").value = ""; $("#filter").value = "all";
+    status.textContent = "Family created. Use Copy invitation link in the roster to share it.";
+    await load();
+  } catch (error) { status.textContent = error.message; }
+  finally { button.disabled = false; }
+};
