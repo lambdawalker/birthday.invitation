@@ -20,7 +20,7 @@ function tick(time) {
   const elapsed = previous ? Math.min(time - previous, 50) : 0;
   previous = time;
   const bottom = document.documentElement.scrollHeight - window.innerHeight;
-  position = Math.min(position + elapsed * 0.012, bottom); // 12 pixels/second
+  position = Math.min(position + elapsed * 0.006, bottom); // 6 pixels/second
   window.scrollTo({ top: position, behavior: "instant" });
   expected = window.scrollY;
   if (position >= bottom) { stopMotion(); return; }

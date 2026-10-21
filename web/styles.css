@@ -857,7 +857,7 @@ footer .contact-line { margin-top: 24px; }
 /* A single reading order on phones and desktops. */
 .invitation-page .invitation-intro { display: block; padding: 16px 24px 16px; text-align: center; }
 .invitation-intro .hero-copy { max-width: 760px; margin: auto; }
-.invitation-page .invitation-intro h1 { font-size: clamp(2.1rem, 5vw, 3.7rem); margin-bottom: 14px; }
+.invitation-page .invitation-intro h1 { font-size: clamp(2.1rem, 5vw, 3.7rem); margin: 14px 0 28px; }
 .invitation-page .time-update { background: rgb(190 222 247 / 65%); border: 1px solid #91b7d5; border-radius: 18px; padding: 8px 18px; max-width: 560px; margin: auto; }
 .time-update p { width: 100%; }
 .time-update strong { font-size: clamp(1.1rem, 3vw, 1.4rem); }
