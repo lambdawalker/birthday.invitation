@@ -25,9 +25,13 @@ float fbm(vec2 p) {
   return val;
 }
 float warp(vec2 p) {
-  vec2 q = vec2(fbm(p), fbm(p + vec2(5.2,1.3)));
-  vec2 r = vec2(fbm(p + 4.0*q + vec2(1.7,9.2)), fbm(p + 4.0*q + vec2(8.3,2.8)));
-  return fbm(p + 10.0*r);
+  // Independent continuous offsets deform each layer instead of only translating it.
+  vec2 flowA = 0.55 * vec2(sin(iTime * 0.71), cos(iTime * 0.53));
+  vec2 flowB = 0.45 * vec2(cos(iTime * 0.43), sin(iTime * 0.67));
+  vec2 q = vec2(fbm(p + flowA), fbm(p + vec2(5.2,1.3) - flowB));
+  vec2 r = vec2(fbm(p + 4.0*q + vec2(1.7,9.2) + flowB),
+                fbm(p + 4.0*q + vec2(8.3,2.8) - flowA));
+  return fbm(p + (9.0 + sin(iTime * 0.31)) * r);
 }
 // Powder blue, lavender, blush and warm cream. Keep dark plum text legible.
 vec3 palette(float t) {

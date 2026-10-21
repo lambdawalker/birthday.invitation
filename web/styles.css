@@ -897,3 +897,17 @@ footer .contact-line { margin-top: 24px; }
 
 /* Full-bleed desktop background; retain the readable inner text width. */
 .invitation-page .hero.invitation-intro { max-width: none; width: 100%; }
+
+/* Deep plum dock with warm, high-contrast response controls. */
+.invitation-page .rsvp-dock {
+  background: #211729;
+  color: #fff5e9;
+  border-top-color: #655273;
+  box-shadow: 0 -4px 24px #160e2440;
+}
+.invitation-page .rsvp-dock .gold { background: #edcfa5; color: #211729; }
+.invitation-page .rsvp-dock .gold:hover:not(:disabled) { background: #ffe3bc; color: #211729; }
+.invitation-page .rsvp-dock .outline { background: transparent; color: #f3e8fa; border-color: #baa3cc; }
+.invitation-page .rsvp-dock .outline:hover:not(:disabled) { background: #42304f; color: #fff5e9; }
+.invitation-page .rsvp-dock :focus-visible { outline-color: #f3d69e; }
+.invitation-page .rsvp-dock .error { color: #ffbbb6; }
