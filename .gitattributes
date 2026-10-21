@@ -27,3 +27,10 @@ previews/**/assets/*.webp -filter -diff -merge -text
 
 # Deployable portrait is served directly from the static site.
 web/assets/abi-bust.webp -filter -diff -merge -text
+
+# Browser-ready generated artwork, available directly to static deployments.
+web/assets/abi-size.webp -filter -diff -merge -text
+web/assets/abi-envelopes.webp -filter -diff -merge -text
+web/assets/abi-favorites.webp -filter -diff -merge -text
+web/assets/viking-map.webp -filter -diff -merge -text
+web/assets/abi-smile-*.webp -filter -diff -merge -text
