@@ -14,6 +14,7 @@
     <script type="module" src="app.js"></script>
     <script type="module" src="invitation-experience.js"></script>
     <script type="module" src="invitation-background.js"></script>
+    <script type="module" src="abi-scroll.js"></script>
   </head>
   <body class="invitation-page">
     <main>
@@ -28,10 +29,10 @@
             </p>
           </div>
           <p class="party-date">Sábado 24 de octubre de 2026 · Ciudad Juárez</p>
-          <img class="abi-bust" src="assets/abi-bust.webp" alt="Abi con su vestido vikingo y una guirnalda decorativa" width="1024" height="1024" fetchpriority="high" />
+          <div class="abi-bust abi-portrait"><img class="abi-bust-frame" src="assets/abi-bust.webp" alt="Abi con su vestido vikingo y una guirnalda decorativa" width="1024" height="1024" fetchpriority="high" /><canvas width="640" height="640" aria-hidden="true" hidden></canvas></div>
           <a class="gift-link" href="#gifts"><img src="assets/viking-gift.webp" width="44" height="44" alt="" />Ideas para regalos ↓</a>
       <div class="event-location">
-        <a class="hero-address" href="https://www.google.com/maps/place/C.+Arquitectura+419,+32320+Ju%C3%A1rez,+Chih./@31.7414022,-106.4335871,17z/data=!3m1!4b1!4m6!3m5!1s0x86e75be5320a9383:0xc2213e7a3f8c92ae!8m2!3d31.7413977!4d-106.4310122!16s%2Fg%2F11m_f5tgg3?entry=ttu&amp;g_ep=EgoyMDI2MTAxNC4wIKXMDSoASAFQAw%3D%3D" target="_blank" rel="noopener noreferrer">Calle Arquitectura #419 ↗</a>
+        <a class="hero-address" href="https://www.google.com/maps/place/C.+Arquitectura+419,+32320+Ju%C3%A1rez,+Chih./@31.7414022,-106.4335871,17z/data=!3m1!4b1!4m6!3m5!1s0x86e75be5320a9383:0xc2213e7a3f8c92ae!8m2!3d31.7413977!4d-106.4310122!16s%2Fg%2F11m_f5tgg3?entry=ttu&amp;g_ep=EgoyMDI2MTAxNC4wIKXMDSoASAFQAw%3D%3D" target="_blank" rel="noopener noreferrer"><img class="map-icon" src="assets/viking-map.webp" width="48" height="48" alt="" /><span>Calle Arquitectura #419 ↗</span></a>
       </div>
       <p class="hospitality">Si gustas, puedes traer tu cerveza favorita.</p>
 
@@ -44,6 +45,7 @@
         <div class="gift-grid">
           <article>
             <span>01</span>
+            <img class="gift-abi" src="assets/abi-size.webp" width="512" height="512" loading="lazy" alt="" />
             <h3>Mi talla</h3>
             <p>
               Uso talla de <strong>2 años</strong>.
@@ -51,6 +53,7 @@
           </article>
           <article>
             <span>02</span>
+            <img class="gift-abi" src="assets/abi-envelopes.webp" width="512" height="512" loading="lazy" alt="" />
             <h3>Lluvia de sobres</h3>
             <p>
               También habrá lluvia de sobres, por si prefieres regalarme un
@@ -59,6 +62,7 @@
           </article>
           <article>
             <span>03</span>
+            <img class="gift-abi" src="assets/abi-favorites.webp" width="512" height="512" loading="lazy" alt="" />
             <h3>Mis favoritos</h3>
             <p>
               Me encanta <strong>Chimuelo</strong>, de Cómo entrenar a tu

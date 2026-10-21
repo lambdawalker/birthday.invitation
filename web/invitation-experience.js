@@ -1,3 +1,11 @@
+// Capture the available hero height once; mobile toolbar changes must not resize it.
+const hero = document.querySelector('.invitation-intro');
+const dock = document.querySelector('.rsvp-dock');
+if (hero && dock) {
+  const viewportHeight = window.visualViewport?.height || window.innerHeight;
+  hero.style.setProperty('--hero-initial-height', `${Math.max(0, viewportHeight - dock.getBoundingClientRect().height)}px`);
+}
+
 // Auto-scroll only until the first interaction; never resume unexpectedly.
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 let stopped = reducedMotion.matches, frame = 0, timer = 0;

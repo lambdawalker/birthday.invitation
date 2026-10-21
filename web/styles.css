@@ -889,8 +889,8 @@ footer .contact-line { margin-top: 24px; }
 /* Decorative shader stays behind content and cannot intercept guest actions. */
 .invitation-page .hero.invitation-intro {
   isolation: isolate;
-  min-height: max(0px, calc(100vh - var(--rsvp-height, 190px)));
-  min-height: max(0px, calc(100dvh - var(--rsvp-height, 190px)));
+  min-height: var(--hero-initial-height, calc(100vh - 190px));
+  min-height: var(--hero-initial-height, calc(100svh - 190px));
 }
 #invitation-background { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; opacity: 0; }
 #invitation-background.ready { opacity: 1; }
@@ -911,3 +911,13 @@ footer .contact-line { margin-top: 24px; }
 .invitation-page .rsvp-dock .outline:hover:not(:disabled) { background: #42304f; color: #fff5e9; }
 .invitation-page .rsvp-dock :focus-visible { outline-color: #f3d69e; }
 .invitation-page .rsvp-dock .error { color: #ffbbb6; }
+
+/* Artwork dimensions are reserved before download to prevent scroll jumps. */
+.invitation-page .abi-portrait { position: relative; aspect-ratio: 1; }
+.abi-portrait .abi-bust-frame, .abi-portrait canvas { display: block; position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.gift-abi { display: block; width: min(100%, 220px); height: auto; aspect-ratio: 1; object-fit: contain; margin: 12px auto; }
+.invitation-intro .hero-address { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.map-icon { width: 48px; height: 48px; object-fit: contain; flex-shrink: 0; }
+@media (max-width: 760px) {
+  .invitation-page .abi-portrait { width: 25vh; width: 25svh; height: 25vh; height: 25svh; max-width: 100%; }
+}
