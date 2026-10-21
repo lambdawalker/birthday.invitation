@@ -13,10 +13,12 @@
     <link rel="stylesheet" href="styles.css" />
     <script type="module" src="app.js"></script>
     <script type="module" src="invitation-experience.js"></script>
+    <script type="module" src="invitation-background.js"></script>
   </head>
   <body class="invitation-page">
     <main>
       <section class="hero invitation-intro">
+        <canvas id="invitation-background" aria-hidden="true"></canvas>
         <div class="hero-copy">
           <h1>Celebremos los <em>dos años de Abi.</em></h1>
           <div class="weather time-update">
@@ -48,19 +50,19 @@
             </p>
           </article>
           <article>
-            <span>02</span>
-            <h3>Mis favoritos</h3>
-            <p>
-              Me encanta <strong>Chimuelo</strong>, de Cómo entrenar a tu
-              dragón, y los <strong>Teletubbies</strong>.
-            </p>
-          </article>
-          <article>
             <span>03</span>
             <h3>Lluvia de sobres</h3>
             <p>
               También habrá lluvia de sobres, por si prefieres regalarme un
               poquito de magia para después.
+            </p>
+          </article>
+          <article>
+            <span>02</span>
+            <h3>Mis favoritos</h3>
+            <p>
+              Me encanta <strong>Chimuelo</strong>, de Cómo entrenar a tu
+              dragón, y los <strong>Teletubbies</strong>.
             </p>
           </article>
         </div>
