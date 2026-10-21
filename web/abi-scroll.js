@@ -10,10 +10,8 @@ if (portrait) {
   function render() {
     pending = 0;
     if (!ready || !ctx || reduced.matches) { canvas.hidden = true; base.style.visibility = ''; return; }
-    const rect = portrait.getBoundingClientRect();
-    const top = rect.top + window.scrollY;
-    // Finish the smile while the portrait is still on screen; reverse on upward scroll.
-    const progress = Math.max(0, Math.min(1, window.scrollY / Math.max(1, top + rect.height * 0.35)));
+    // Reach the full smile within the first short swipe; reverse on upward scroll.
+    const progress = Math.max(0, Math.min(1, window.scrollY / 120));
     const position = progress * (frames.length - 1);
     const index = Math.min(frames.length - 2, Math.floor(position));
     const mix = position - index;
@@ -32,7 +30,7 @@ if (portrait) {
   async function loadFrames() {
     if (!ctx || ready || reduced.matches) return;
     try {
-      const images = await Promise.all(['assets/abi-smile-1.webp', 'assets/abi-smile-2.webp'].map(async src => {
+      const images = await Promise.all([1, 3, 4, 5, 7, 6, 2].map(frame => `assets/abi-smile-${frame}.webp`).map(async src => {
         const img = new Image(); img.src = src; await img.decode(); return img;
       }));
       await base.decode();
