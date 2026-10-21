@@ -885,3 +885,9 @@ footer .contact-line { margin-top: 24px; }
 }
 
 .invitation-intro .hospitality { padding: 12px 0 8px; }
+
+/* Fill the visible viewport above the measured, responsive RSVP dock. */
+.invitation-page .hero.invitation-intro {
+  min-height: max(0px, calc(100vh - var(--rsvp-height, 190px)));
+  min-height: max(0px, calc(100dvh - var(--rsvp-height, 190px)));
+}
