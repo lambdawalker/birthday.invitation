@@ -25,9 +25,15 @@ float fbm(vec2 p) {
   return val;
 }
 float warp(vec2 p) {
-  vec2 q = vec2(fbm(p), fbm(p + vec2(5.2,1.3)));
-  vec2 r = vec2(fbm(p + 4.0*q + vec2(1.7,9.2)), fbm(p + 4.0*q + vec2(8.3,2.8)));
-  return fbm(p + 10.0*r);
+  // Independent continuous offsets deform each layer instead of only translating it.
+  vec2 flowA = 0.55 * vec2(sin(iTime * 0.71), cos(iTime * 0.53));
+  vec2 flowB = 0.45 * vec2(cos(iTime * 0.43), sin(iTime * 0.67));
+  // Cancel and reverse the outer drift for alternate layers.
+  vec2 reverseDrift = -iTime * vec2(0.6, 0.3);
+  vec2 q = vec2(fbm(p + flowA), fbm(p + reverseDrift + vec2(5.2,1.3) - flowB));
+  vec2 r = vec2(fbm(p + 4.0*q + vec2(1.7,9.2) + flowB),
+                fbm(p + reverseDrift + 4.0*q + vec2(8.3,2.8) - flowA));
+  return fbm(p + (9.0 + sin(iTime * 0.31)) * r);
 }
 // Powder blue, lavender, blush and warm cream. Keep dark plum text legible.
 vec3 palette(float t) {
@@ -42,7 +48,8 @@ void main() {
   vec2 p = uv * 3.0 - 1.5;
   p.x *= iResolution.x / iResolution.y;
   vec2 pt = p + vec2(iTime * 0.3, iTime * 0.15);
-  float n = warp(pt), n2 = fbm(pt * 1.5 + vec2(n * 0.5));
+  vec2 counterPt = p - vec2(iTime * 0.24, iTime * 0.12);
+  float n = warp(pt), n2 = fbm(counterPt * 1.5 + vec2(n * 0.5));
   float density = n * 0.7 + n2 * 0.3;
   float colorIndex = density + 0.2*sin(p.x*0.5+p.y*0.3) + 0.1*n2;
   vec3 col = palette(colorIndex);
