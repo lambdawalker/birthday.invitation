@@ -798,3 +798,74 @@ button:disabled { opacity: .6; cursor: wait; }
 .gift-link img { width: 80px; height: 80px; object-fit: contain; }
 #gifts { scroll-margin-top: 20px; }
 footer .contact-line { margin-top: 24px; }
+
+/* Pastel invitation palette; private management pages retain their own theme. */
+.invitation-page {
+  --ink: #40334f;
+  --muted: #66566e;
+  --cream: #fffaf4;
+  --gold: #725183;
+  --forest: #725183;
+  --deep: #493356;
+  --line: #d8c7dd;
+  background: #fffaf4;
+  color: var(--ink);
+}
+.invitation-page .hero {
+  background: radial-gradient(ellipse at 95% 80%, #fff0be 0, transparent 55%),
+    linear-gradient(155deg, #d9e8f5 0%, #e5dcf3 38%, #f6dce7 78%, #fff0d5 100%);
+  color: var(--ink);
+}
+.invitation-page .date-time { border-color: #a78daf; }
+.invitation-page .date-time small { color: var(--muted); }
+.invitation-page .hero-address:hover,
+.invitation-page .gift-link:hover,
+.invitation-page .contact-line a:hover { color: var(--deep); }
+.invitation-page .portrait { border-color: #ab88af; }
+.invitation-page .portrait-label {
+  background: linear-gradient(transparent, #40334fe6);
+  color: #fffaf4;
+}
+.invitation-page .age-seal {
+  background: #fff0be;
+  color: var(--deep);
+  border-color: #9877a4;
+}
+.invitation-page .forest { background: #d6c9e5; }
+.invitation-page .weather { background: #fff0cf; }
+.invitation-page .hospitality { color: #725183; }
+.invitation-page .gift-grid article { border-color: var(--line); }
+.invitation-page .gift-grid article > span { color: var(--gold); }
+.invitation-page footer {
+  background: linear-gradient(135deg, #e5dcf3, #f6dce7);
+  color: var(--ink);
+}
+.invitation-page .rsvp-dock {
+  background: #fffaf4;
+  color: var(--ink);
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -4px 24px #49335618;
+}
+.invitation-page .gold { background: #725183; color: #fffaf4; }
+.invitation-page .outline { color: var(--deep); border-color: #9877a4; }
+.invitation-page .button:hover:not(:disabled) { background: #eadff0; color: var(--deep); }
+.invitation-page .gold:hover:not(:disabled) { background: #493356; color: #fffaf4; }
+.invitation-page input { border-color: #9877a4; }
+.invitation-page #rsvp-dialog::backdrop { background: #40334fa6; }
+.invitation-page :focus-visible { outline-color: #725183; }
+
+/* A single reading order on phones and desktops. */
+.invitation-page .invitation-intro { display: block; padding: 36px 24px 0; text-align: center; }
+.invitation-intro .hero-copy { max-width: 760px; margin: auto; }
+.invitation-page .invitation-intro h1 { font-size: clamp(2.1rem, 5vw, 3.7rem); margin-bottom: 24px; }
+.invitation-page .time-update { border: 1px solid #d6bd88; border-radius: 18px; padding: 18px 24px; max-width: 560px; margin: auto; }
+.time-update p { width: 100%; }
+.time-update strong { font-size: clamp(1.1rem, 3vw, 1.4rem); }
+.time-update span { display: block; }
+.time-update .new-time { font-size: clamp(1.8rem, 5vw, 2.6rem); font-weight: 700; line-height: 1.3; margin: 8px 0; }
+.party-date { margin: 20px 0 0; font-size: .95rem; }
+.abi-bust { display: block; width: min(100%, 340px); height: auto; margin: 8px auto 0; }
+.invitation-page .gifts { padding-top: 32px; padding-bottom: 24px; }
+.invitation-page .gifts h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); }
+.event-location { text-align: center; padding: 0 24px; }
+.invitation-page .hospitality { padding-bottom: 36px; }
