@@ -885,3 +885,12 @@ footer .contact-line { margin-top: 24px; }
 }
 
 .invitation-intro .hospitality { padding: 12px 0 8px; }
+
+/* Decorative shader stays behind content and cannot intercept guest actions. */
+.invitation-page .hero.invitation-intro {
+  isolation: isolate;
+  min-height: max(0px, calc(100vh - var(--rsvp-height, 190px)));
+  min-height: max(0px, calc(100dvh - var(--rsvp-height, 190px)));
+}
+#invitation-background { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; opacity: 0; }
+#invitation-background.ready { opacity: 1; }
