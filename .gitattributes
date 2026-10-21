@@ -24,3 +24,6 @@
 # Small browser-ready derivatives stay in ordinary Git for direct serving.
 previews/**/assets/*.webp -filter -diff -merge -text
 # Text-based SVG, code, YAML and JSON stay reviewable in Git.
+
+# Deployable portrait is served directly from the static site.
+web/assets/abi-bust.webp -filter -diff -merge -text

@@ -75,7 +75,7 @@ $('#signout').onclick=()=>{if(confirm('Sign out? You will need a new single-use 
 $('#refresh').onclick=()=>task(refresh);
 $('#search').oninput=renderRoster;$('#filter').onchange=renderRoster;
 const action=(f,body)=>api(`/families/${f.id}/actions`,'POST',body);
-function invitationMessage(f) { return `¡Hola, ${f.name}! Celebremos los dos años de Abi el 24 de octubre a las 4:00 p. m. ¡Trae a tu familia! Confirma aquí: ${location.origin}/?i=${f.id}`; }
+function invitationMessage(f) { return `¡Hola, ${f.name}! Celebremos los dos años de Abi el 24 de octubre a las 12:00 p. m. ¡Trae a tu familia! Confirma aquí: ${location.origin}/?i=${f.id}`; }
 function showSend(f) {
   activeSend=f; $('#send-family').textContent=f.name+' · '+f.phone;
   const message=invitationMessage(f);$('#message-preview').value=message;
