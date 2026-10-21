@@ -6,6 +6,8 @@ Generated with the built-in image generation tool using the original A02/A03/A04
 - `abi-envelopes.webp`: Abi in A03’s dark fur cape and layered dress, holding cream gift envelopes with gold seals.
 - `abi-favorites.webp`: Abi in A04’s embroidered long sleeves and woven sash with Toothless and Teletubbies plush toys.
 - `viking-map.webp`: folded parchment, winding route, location pin and Viking longhouse.
-- `abi-smile-1.webp`, `abi-smile-2.webp`: progressively smiling portrait frames with gently shifted curls, based on the existing bust.
+- `abi-smile-1.webp` through `abi-smile-7.webp`: progressively smiling portrait frames with gently shifted curls, based on the existing bust.
 
-The portrait blends the original and two generated frames in a fixed-size canvas as the page scrolls. This is a three-keyframe illustration animation, not a continuous video. Scrolling upward reverses it. Reduced motion displays the original image without loading extra frames. Failed frame downloads also retain the original. The map icon and gift illustrations are decorative; the adjacent text conveys their meaning.
+The portrait blends the original and seven generated frames in a fixed-size canvas as the page scrolls. This is a eight-keyframe illustration animation, not a continuous video. Scrolling upward reverses it. Reduced motion displays the original image without loading extra frames. Failed frame downloads also retain the original. The map icon and gift illustrations are decorative; the adjacent text conveys their meaning.
+
+The smile completes in the first 120 CSS pixels of scrolling. The five additional frames fill the expression progression. Article artwork sits to the right, with height determined by the text. Dock buttons use CSS metalwork so labels remain selectable, accessible text.
